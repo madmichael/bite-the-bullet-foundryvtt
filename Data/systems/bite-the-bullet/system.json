@@ -40,6 +40,27 @@
         "path": "packs/statuses.db",
         "type": "Item",
         "system": "bite-the-bullet" 
+      },
+      {
+        "name": "starter-weapons",
+        "label": "Bite the Bullet — Starter Weapons",
+        "path": "packs/starter-weapons.db",
+        "type": "Item",
+        "system": "bite-the-bullet"
+      },
+      {
+        "name": "starter-armor",
+        "label": "Bite the Bullet — Starter Armor",
+        "path": "packs/starter-armor.db",
+        "type": "Item",
+        "system": "bite-the-bullet"
+      },
+      {
+        "name": "starter-gear",
+        "label": "Bite the Bullet — Starter Gear",
+        "path": "packs/starter-gear.db",
+        "type": "Item",
+        "system": "bite-the-bullet"
       }
     ],
     "license": "LICENSE.txt",

@@ -6,7 +6,7 @@ export class BiteBulletActorSheet extends foundry.appv1.sheets.ActorSheet {
 
     /** @override */
     static get defaultOptions() {
-      return mergeObject(super.defaultOptions, {
+      return foundry.utils.mergeObject(super.defaultOptions, {
         classes: ["bite-bullet", "sheet", "actor"],
         width: 600,
         height: 680,
@@ -133,19 +133,20 @@ export class BiteBulletActorSheet extends foundry.appv1.sheets.ActorSheet {
       if (!this.isEditable) return;
   
       // Roll handlers, click handlers, etc. would go here.
-      
-      // Roll damage for weapons
-      html.find('.roll-damage').click(this._onRollDamage.bind(this));
-
-      // Use gear
-      html.find('.use-gear').click(this._onUseGear.bind(this));
-
-      // Apply burden
-      html.find('.apply-burden').click(this._onApplyBurden.bind(this));
 
       // Physical / Social attack buttons
-      html.find('.physical-attack').click(this._onPhysicalAttack.bind(this));
+      html.find('.physical-attack').click(() => this._onPhysicalAttack());
       html.find('.social-attack').click(this._onSocialAttack.bind(this));
+
+      // Click weapon name to open pre-filled Physical Attack dialog
+      html.find('ol.items-list li.item .item-name').click(ev => {
+        const li = $(ev.currentTarget).parents('.item');
+        const item = this.actor.items.get(li.data('itemId'));
+        if (item?.type === 'weapon') {
+          ev.preventDefault();
+          this._onPhysicalAttack(item);
+        }
+      });
 
       // Add Inventory Item
       html.find('.item-create').click(this._onItemCreate.bind(this));
@@ -351,18 +352,29 @@ export class BiteBulletActorSheet extends foundry.appv1.sheets.ActorSheet {
     /**
      * Physical Attack dialog -> calls helper
      */
-    async _onPhysicalAttack(event) {
-      event.preventDefault();
+    async _onPhysicalAttack(weapon = null) {
+      // If invoked from a button click, weapon will be null; if from weapon name click, a weapon Document is passed
       const t = game.i18n.localize.bind(game.i18n);
-      const targets = canvas?.tokens?.controlled?.length ? canvas.tokens.controlled.map(t => ({ id: t.actor?.id, name: t.name, actor: t.actor })) : [];
+      const selectedTokens = canvas?.tokens?.controlled ?? [];
+      const targets = selectedTokens.length ? selectedTokens.map(t => ({ id: t.actor?.id, name: t.name, actor: t.actor })) : [];
+
+      // Per-weapon auto-cue: prefill from selected weapon in inventory if present
+      const weapons = this.actor.items.filter(i => i.type === 'weapon');
+      const selectedWeapon = weapon || weapons[0];
+      const autoBase = selectedWeapon?.system?.damage || '1d6';
+      const autoIsGun = !!selectedWeapon?.system?.properties?.isGun;
+      const autoAoe = !!selectedWeapon?.system?.properties?.aoe;
       const options = targets.map(o => `<option value="${o.id}">${o.name}</option>`).join("");
+      const weaponOptions = weapons.map(w => `<option value="${w.id}" ${selectedWeapon && w.id===selectedWeapon.id ? 'selected' : ''}>${w.name}</option>`).join("");
       const template = `
         <form>
-          <div class="form-group"><label>${t('ATTACK.BaseFormula')}:</label><input type="text" name="base" value="1d6"/></div>
+          <div class="form-group"><label>${t('ATTACK.Weapon')}:</label><select name="weapon">${weaponOptions}</select></div>
+          <div class="form-group"><label>${t('ATTACK.BaseFormula')}:</label><input type="text" name="base" value="${autoBase}"/></div>
           <div class="form-group"><label>${t('ATTACK.Target')}:</label><select name="target">${options}</select></div>
           <div class="form-group"><label><input type="checkbox" name="adv"/> ${t('ATTACK.Advantage')}</label></div>
           <div class="form-group"><label><input type="checkbox" name="dis"/> ${t('ATTACK.Disadvantage')}</label></div>
-          <div class="form-group"><label><input type="checkbox" name="isGun" checked/> ${t('ATTACK.IsGun')}</label></div>
+          <div class="form-group"><label><input type="checkbox" name="isGun" ${autoIsGun ? 'checked' : ''}/> ${t('ATTACK.IsGun')}</label></div>
+          <div class="form-group"><label><input type="checkbox" name="aoe" ${autoAoe ? 'checked' : ''}/> ${t('ATTACK.AoE') || 'AoE (affects all selected targets)'}</label></div>
         </form>`;
       new Dialog({
         title: t('ATTACK.PhysicalAttackTitle'),
@@ -372,14 +384,19 @@ export class BiteBulletActorSheet extends foundry.appv1.sheets.ActorSheet {
             label: t('ATTACK.Attack'),
             callback: async (html) => {
               const form = html[0].querySelector('form');
+              // Re-read weapon to apply cues
+              const weaponId = form.weapon?.value;
+              const chosen = weapons.find(w => w.id === weaponId);
               const base = form.base.value || '1d6';
               const targetId = form.target.value;
               const adv = form.adv.checked;
               const dis = form.dis.checked;
-              const isGun = form.isGun.checked;
+              const isGun = form.isGun.checked || !!chosen?.system?.properties?.isGun;
+              const aoe = form.aoe.checked || !!chosen?.system?.properties?.aoe;
               const tgt = targets.find(x => x.id === targetId)?.actor ?? null;
+              const tgtActors = selectedTokens.map(t => t.actor).filter(Boolean);
               if (game?.bitebullet?.rollPhysicalDamage) {
-                await game.bitebullet.rollPhysicalDamage({ attacker: this.actor, baseFormula: base, target: tgt, advantage: adv, disadvantage: dis, isGun });
+                await game.bitebullet.rollPhysicalDamage({ attacker: this.actor, baseFormula: base, target: tgt, targets: tgtActors, advantage: adv, disadvantage: dis, isGun, aoe });
               }
             }
           },

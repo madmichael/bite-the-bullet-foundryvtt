@@ -31,11 +31,13 @@ export async function performActOfFaith(actor, scale, description = "", opts = {
   const scaleMod = faithScale.modifier === "special" ? -4 : Number(faithScale.modifier ?? 0);
   const extraMod = Number(opts.extraModifier ?? 0);
 
-  const roll = await (new Roll("1d20")).evaluate({ async: true });
+  const roll = new Roll("1d20");
+  await roll.evaluate();
   const target = Number(faithAttr?.value ?? 0) + scaleMod + extraMod;
   const success = roll.total <= target;
 
   let damageRoll = null;
+  let mitigatedDamage = null;
   let usedStatus = false;
   if (!success) {
     const useStatus = game.settings.get('bite-the-bullet', 'faithFailureUsesStatus');
@@ -108,17 +110,30 @@ export async function performActOfFaith(actor, scale, description = "", opts = {
         }).render(true);
       });
     } else {
-      damageRoll = await (new Roll(`${required}d6`)).evaluate({ async: true });
+      damageRoll = new Roll(`${required}d6`);
+      await damageRoll.evaluate();
+
+      // Bone-ward mitigation: reduce damage by 1 if setting enabled and actor has the item
+      let dmgTotal = damageRoll.total ?? 0;
+      try {
+        const boneToggle = game.settings.get('bite-the-bullet', 'boneWardMitigation');
+        if (boneToggle) {
+          const hasBone = (actor.items ?? []).some(i => (i.name || '').toLowerCase().includes('bone-ward fetish'));
+          if (hasBone) dmgTotal = Math.max(0, dmgTotal - 1);
+        }
+      } catch (e) { /* ignore */ }
+      mitigatedDamage = dmgTotal;
 
       // Apply to Sand first
       const currentSand = Number(actor.system?.resources?.sand?.value ?? 0);
-      const newSand = Math.max(0, currentSand - damageRoll.total);
+      const newSand = Math.max(0, currentSand - dmgTotal);
       await actor.update({ "system.resources.sand.value": newSand });
 
       // Overflow to Faith
-      if (currentSand - damageRoll.total < 0) {
-        const excess = Math.abs(currentSand - damageRoll.total);
-        const newFaith = Math.max(0, Number(faithAttr?.value ?? 0) - excess);
+      if (currentSand - dmgTotal < 0) {
+        const currentFaith = Number(actor.system?.attributes?.faith?.value ?? 0);
+        const overflow = Math.abs(currentSand - dmgTotal);
+        const newFaith = Math.max(0, currentFaith - overflow);
         await actor.update({ "system.attributes.faith.value": newFaith });
       }
     }
@@ -131,7 +146,7 @@ export async function performActOfFaith(actor, scale, description = "", opts = {
       <div class="roll-result ${success ? 'success' : 'failure'}">
         <strong>Rolled:</strong> ${roll.total} vs Target: ${target}
         <div class="result">${success ? 'Success!' : 'Failure!'}</div>
-        ${!success && damageRoll ? `<div class="damage">Damage: ${damageRoll.total}</div>` : ''}
+        ${!success && mitigatedDamage !== null ? `<div class="damage">Damage: ${mitigatedDamage}</div>` : ''}
         ${!success && usedStatus ? `<div class="status-note"><em>${game.i18n.localize('SETTINGS.StatusPickerTitle')}</em></div>` : ''}
       </div>
     </div>

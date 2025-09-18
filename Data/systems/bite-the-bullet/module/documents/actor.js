@@ -61,7 +61,44 @@ export class BiteBulletActor extends Actor {
       if (systemData.resources.sand.value > systemData.resources.sand.max) {
         systemData.resources.sand.value = systemData.resources.sand.max;
       }
-  
+
+      // Aggregate item-based Social Armor into details.socialArmor.value
+      try {
+        const items = this.items ?? [];
+        let socialArmorTotal = 0;
+        for (const it of items) {
+          const sys = it.system || {};
+          // Armor item with social type contributes its armor.value
+          if (it.type === 'armor' && sys.armor && sys.armor.type === 'social') {
+            const val = Number(sys.armor.value ?? 0);
+            if (!isNaN(val)) socialArmorTotal += val;
+          }
+          // Any item may explicitly provide socialArmor.value
+          const explicit = Number(sys?.socialArmor?.value ?? 0);
+          if (!isNaN(explicit) && explicit > 0) socialArmorTotal += explicit;
+        }
+        if (!systemData.details) systemData.details = {};
+        if (!systemData.details.socialArmor) systemData.details.socialArmor = { value: 0 };
+        // Bone-ward fetish toggle adds +1 social armor if item is owned
+        try {
+          const boneToggle = game.settings.get('bite-the-bullet', 'boneWardMitigation');
+          if (boneToggle) {
+            const uuid = game.settings.get('bite-the-bullet', 'boneWardItemUuid');
+            const hasBone = items.some(i => {
+              const src = i?.flags?.core?.sourceId || '';
+              if (uuid && src === uuid) return true;
+              return (i.name || '').toLowerCase().includes('bone-ward fetish');
+            });
+            if (hasBone) socialArmorTotal += 1;
+          }
+        } catch (e) { /* ignore */ }
+        systemData.details.socialArmor.value = socialArmorTotal;
+      } catch (e) {
+        // No-op on errors; ensure field exists
+        if (!systemData.details) systemData.details = {};
+        if (!systemData.details.socialArmor) systemData.details.socialArmor = { value: 0 };
+      }
+
       // Calculate characteristic usage tracking
       for (let [key, characteristic] of Object.entries(systemData.characteristics)) {
         if (characteristic.uses >= characteristic.rank * 10) {

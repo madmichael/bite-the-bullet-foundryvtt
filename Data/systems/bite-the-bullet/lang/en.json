@@ -122,6 +122,8 @@
     "SETTINGS": {
       "FaithFailureUsesStatusName": "Faith Failure: Use Status Consequences",
       "FaithFailureUsesStatusHint": "If enabled, failed Acts of Faith apply a status/condition consequence instead of direct damage.",
+      "BoneWardMitigationName": "Bone-ward Fetish Provides Social/Faith Mitigation",
+      "BoneWardMitigationHint": "When enabled, owning a Bone-ward fetish grants +1 Social Armor and +1 Faith mitigation against Act of Faith failure damage.",
       "ActOfFaithTitle": "Act of Faith",
       "ActOfFaithScale": "Scale",
       "ActOfFaithTapCharacteristic": "Tap Characteristic (optional)",
@@ -142,6 +144,8 @@
       "Advantage": "Advantage",
       "Disadvantage": "Disadvantage",
       "IsGun": "Gun (ignore mundane armor)",
+      "AoE": "AoE (affects all selected targets)",
+      "Weapon": "Weapon",
       "Target": "Target",
       "Attack": "Attack"
     }
