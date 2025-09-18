@@ -1,0 +1,53 @@
+{
+    "id": "bite-the-bullet",
+    "title": "Bite the Bullet",
+    "description": "A Foundry VTT system for the Bite the Bullet RPG - a post-apocalyptic Western where faith, grit, and gunpowder meet in the wasteland.",
+    "version": "1.0.0",
+    "compatibility": {
+      "minimum": "13",
+      "verified": "13"
+    },
+    "authors": [
+      {
+        "name": "Michael Spredemann - Magical Mishap",
+        "email": "mkemichael@gmail.com"
+      }
+    ],
+    "esmodules": [
+      "bite-the-bullet.js"
+    ],
+    "styles": [
+      "css/bite-the-bullet.css"
+    ],
+    "languages": [
+      {
+        "lang": "en",
+        "name": "English",
+        "path": "lang/en.json"
+      }
+    ],
+    "gridDistance": 5,
+    "gridUnits": "ft",
+    "primaryTokenAttribute": "system.attributes.vigor.value",
+    "secondaryTokenAttribute": "system.resources.sand.value",
+    "url": "",
+    "manifest": "",
+    "download": "",
+    "packs": [
+      {
+        "name": "statuses",
+        "label": "Bite the Bullet — Statuses",
+        "path": "packs/statuses.db",
+        "type": "Item",
+        "system": "bite-the-bullet" 
+      }
+    ],
+    "license": "LICENSE.txt",
+    "readme": "README.md",
+    "media": [
+      {
+        "type": "icon",
+        "url": "assets/icons/bite-the-bullet-icon.svg"
+      }
+    ]
+  }

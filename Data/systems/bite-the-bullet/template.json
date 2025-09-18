@@ -1,0 +1,171 @@
+{
+    "Actor": {
+      "types": ["character", "npc"],
+      "templates": {
+        "base": {
+          "attributes": {
+            "vigor": {
+              "value": 10,
+              "min": 0,
+              "max": 18
+            },
+            "presence": {
+              "value": 10,
+              "min": 0,
+              "max": 18
+            },
+            "faith": {
+              "value": 10,
+              "min": 0,
+              "max": 18
+            }
+          },
+          "resources": {
+            "sand": {
+              "value": 7,
+              "min": 0,
+              "max": 12
+            },
+            "inventory": {
+              "value": 10,
+              "min": 0,
+              "max": 20
+            },
+            "load": {
+              "value": 0,
+              "min": 0,
+              "max": 20
+            },
+            "reserve": {
+              "value": 10,
+              "min": 0,
+              "max": 20
+            }
+          },
+          "details": {
+            "biography": {
+              "value": "",
+              "public": ""
+            },
+            "socialArmor": {
+              "value": 0
+            }
+          }
+        }
+      },
+      "character": {
+        "templates": ["base"],
+        "characteristics": {
+          "background": {
+            "rank": 1,
+            "description": "",
+            "uses": 0
+          },
+          "reputation": {
+            "rank": 1,
+            "description": "",
+            "uses": 0
+          },
+          "fortitude": {
+            "rank": 1,
+            "description": "",
+            "uses": 0
+          },
+          "foible": {
+            "rank": 1,
+            "description": "",
+            "uses": 0
+          },
+          "issue": {
+            "rank": 1,
+            "description": "",
+            "uses": 0
+          },
+          "bond": {
+            "rank": 1,
+            "description": "",
+            "uses": 0
+          }
+        },
+        "gear": {
+          "lead": {
+            "value": 0,
+            "max": 10
+          },
+          "money": {
+            "value": 0
+          }
+        }
+      },
+      "npc": {
+        "templates": ["base"],
+        "cr": 1,
+        "xp": {
+          "value": 10
+        }
+      }
+    },
+    "Item": {
+      "types": ["weapon", "armor", "gear", "burden"],
+      "templates": {
+        "base": {
+          "description": "",
+          "source": "",
+          "quantity": 1,
+          "weight": 0,
+          "price": 0,
+          "attuned": false,
+          "equipped": false,
+          "rarity": "",
+          "identified": true,
+          "slots": 1
+        },
+        "physical": {
+          "templates": ["base"],
+          "containerId": "",
+          "equipped": false
+        }
+      },
+      "weapon": {
+        "templates": ["physical"],
+        "weaponType": "revolver",
+        "damage": "1d6",
+        "range": "close",
+        "traits": "",
+        "shots": 6,
+        "properties": {
+          "aoe": false,
+          "melee": false,
+          "silent": false,
+          "concealed": false,
+          "throwable": false,
+          "isGun": true
+        }
+      },
+      "armor": {
+        "templates": ["physical"],
+        "armorType": "light",
+        "armor": {
+          "value": 1,
+          "type": "physical"
+        }
+      },
+      "gear": {
+        "templates": ["physical"],
+        "gearType": "mundane",
+        "uses": {
+          "value": 1,
+          "max": 1,
+          "per": null
+        },
+        "formula": ""
+      },
+      "burden": {
+        "templates": ["base"],
+        "burdenType": "physical",
+        "effect": "",
+        "duration": "temporary",
+        "remedy": ""
+      }
+    }
+  }

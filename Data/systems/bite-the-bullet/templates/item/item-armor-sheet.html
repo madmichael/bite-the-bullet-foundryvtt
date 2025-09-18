@@ -1,0 +1,36 @@
+<form class="bite-bullet item-sheet" autocomplete="off">
+  <header class="sheet-header">
+    <img class="profile-img" src="{{item.img}}" data-edit="img" title="{{item.name}}" height="64" width="64"/>
+    <div class="header-fields">
+      <h1><input name="name" type="text" value="{{item.name}}" placeholder="{{localize 'BITE_BULLET.ItemTypeArmor'}}"/></h1>
+    </div>
+  </header>
+
+  <section class="sheet-body">
+    <div class="form-group">
+      <label>Armor Type</label>
+      <input type="text" name="system.armorType" value="{{system.armorType}}" placeholder="light|medium|heavy|fetish"/>
+    </div>
+
+    <div class="form-group">
+      <label>Armor Value</label>
+      <input type="number" name="system.armor.value" value="{{system.armor.value}}" data-dtype="Number"/>
+    </div>
+
+    <div class="form-group">
+      <label>Damage Type</label>
+      <input type="text" name="system.armor.type" value="{{system.armor.type}}" placeholder="physical|social|faith"/>
+    </div>
+
+    <div class="form-group">
+      <label>Slots</label>
+      <input type="number" name="system.slots" value="{{system.slots}}" data-dtype="Number"/>
+    </div>
+
+    <hr/>
+    <div class="form-group">
+      <label>{{localize 'BITE_BULLET.Description'}}</label>
+      {{editor system.description target="system.description" button=true owner=owner editable=editable}}
+    </div>
+  </section>
+</form>

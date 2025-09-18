@@ -1,0 +1,446 @@
+/* Bite the Bullet System CSS */
+
+/* ===== GENERAL STYLES ===== */
+.bite-bullet {
+    color: #3a3a3a;
+    font-family: 'Roboto', sans-serif;
+  }
+  
+  .bite-bullet .window-content {
+    background: #f8f4e6;
+    background-image: url("../assets/parchment-bg.svg");
+    background-repeat: repeat;
+  }
+  
+  /* ===== SHEET HEADERS ===== */
+  .bite-bullet .sheet-header {
+    background: rgba(0, 0, 0, 0.1);
+    border-bottom: 2px solid #8b4513;
+    padding: 10px;
+  }
+  
+  .bite-bullet .sheet-header h1 {
+    color: #8b4513;
+    font-family: 'Cinzel', serif;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+    margin: 0;
+  }
+  
+  /* ===== ATTRIBUTES ===== */
+  .bite-bullet .attributes {
+    display: flex;
+    justify-content: space-around;
+    margin: 10px 0;
+  }
+  
+  .bite-bullet .attribute {
+    text-align: center;
+    background: rgba(139, 69, 19, 0.1);
+    border: 2px solid #8b4513;
+    border-radius: 8px;
+    padding: 10px;
+    min-width: 100px;
+  }
+  
+  .bite-bullet .attribute-label {
+    font-weight: bold;
+    color: #8b4513;
+    font-size: 12px;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+  }
+  
+  .bite-bullet .attribute-value {
+    font-size: 24px;
+    font-weight: bold;
+    color: #2c1810;
+  }
+  
+  .bite-bullet .attribute input {
+    width: 60px;
+    text-align: center;
+    font-size: 20px;
+    font-weight: bold;
+    border: 1px solid #8b4513;
+    background: rgba(255, 255, 255, 0.8);
+  }
+  
+  /* ===== RESOURCES ===== */
+  .bite-bullet .resources {
+    display: flex;
+    justify-content: space-between;
+    margin: 15px 0;
+  }
+  
+  .bite-bullet .resource {
+    text-align: center;
+    flex: 1;
+    margin: 0 5px;
+  }
+  
+  .bite-bullet .resource-label {
+    font-weight: bold;
+    color: #8b4513;
+    font-size: 11px;
+    text-transform: uppercase;
+  }
+  
+  .bite-bullet .resource-value {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .bite-bullet .resource input {
+    width: 40px;
+    text-align: center;
+    margin: 0 2px;
+    border: 1px solid #8b4513;
+    background: rgba(255, 255, 255, 0.8);
+  }
+  
+  /* ===== CHARACTERISTICS ===== */
+  .bite-bullet .characteristics {
+    margin: 15px 0;
+  }
+  
+  .bite-bullet .characteristic {
+    display: flex;
+    align-items: center;
+    margin: 8px 0;
+    padding: 8px;
+    background: rgba(139, 69, 19, 0.05);
+    border-left: 4px solid #8b4513;
+  }
+  
+  .bite-bullet .characteristic-name {
+    font-weight: bold;
+    color: #8b4513;
+    min-width: 100px;
+    text-transform: capitalize;
+  }
+  
+  .bite-bullet .characteristic-rank {
+    width: 30px;
+    text-align: center;
+    margin: 0 10px;
+    font-weight: bold;
+  }
+  
+  .bite-bullet .characteristic-description {
+    flex: 1;
+    margin: 0 10px;
+  }
+  
+  .bite-bullet .characteristic-uses {
+    font-size: 11px;
+    color: #666;
+    margin: 0 10px;
+  }
+  
+  .bite-bullet .characteristic-tap {
+    background: #8b4513;
+    color: white;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 11px;
+  }
+  
+  .bite-bullet .characteristic-tap:hover {
+    background: #a0522d;
+  }
+  
+  /* ===== BUTTONS ===== */
+  .bite-bullet .rollable {
+    cursor: pointer;
+    color: #8b4513;
+    font-weight: bold;
+  }
+  
+  .bite-bullet .rollable:hover {
+    color: #a0522d;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+  }
+  
+  .bite-bullet .save-roll {
+    background: #d2691e;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin: 2px;
+    font-size: 12px;
+  }
+  
+  .bite-bullet .save-roll:hover {
+    background: #cd853f;
+  }
+  
+  .bite-bullet .faith-act {
+    background: #4682b4;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin: 5px;
+    font-weight: bold;
+  }
+  
+  .bite-bullet .faith-act:hover {
+    background: #5f9ea0;
+  }
+  
+  /* ===== ITEMS ===== */
+  .bite-bullet .items-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  
+  .bite-bullet .item {
+    display: flex;
+    align-items: center;
+    padding: 8px;
+    border-bottom: 1px solid rgba(139, 69, 19, 0.3);
+  }
+  
+  .bite-bullet .item:hover {
+    background: rgba(139, 69, 19, 0.1);
+  }
+  
+  .bite-bullet .item img {
+    width: 36px;
+    height: 36px;
+    margin-right: 10px;
+    border: 1px solid #8b4513;
+    border-radius: 4px;
+  }
+  
+  .bite-bullet .item-name {
+    flex: 1;
+    font-weight: bold;
+    color: #2c1810;
+  }
+  
+  .bite-bullet .item-controls {
+    display: flex;
+    gap: 5px;
+  }
+  
+  .bite-bullet .item-control {
+    background: none;
+    border: none;
+    color: #8b4513;
+    cursor: pointer;
+    padding: 2px;
+    font-size: 14px;
+  }
+  
+  .bite-bullet .item-control:hover {
+    color: #a0522d;
+  }
+  
+  .bite-bullet .item-create {
+    background: #8b4513;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin: 5px 0;
+  }
+  
+  .bite-bullet .item-create:hover {
+    background: #a0522d;
+  }
+  
+  /* ===== TABS ===== */
+  .bite-bullet .sheet-tabs {
+    border-bottom: 2px solid #8b4513;
+    margin-bottom: 10px;
+  }
+  
+  .bite-bullet .sheet-tabs .item {
+    background: rgba(139, 69, 19, 0.1);
+    border: 1px solid #8b4513;
+    border-bottom: none;
+    color: #8b4513;
+    font-weight: bold;
+    padding: 8px 16px;
+    margin-right: 2px;
+    border-radius: 6px 6px 0 0;
+  }
+  
+  .bite-bullet .sheet-tabs .item.active {
+    background: #8b4513;
+    color: white;
+  }
+  
+  .bite-bullet .sheet-tabs .item:hover {
+    background: rgba(139, 69, 19, 0.2);
+  }
+  
+  .bite-bullet .sheet-tabs .item.active:hover {
+    background: #8b4513;
+  }
+  
+  /* ===== CHAT MESSAGES ===== */
+  .bite-bullet.damage-roll,
+  .bite-bullet.save-roll,
+  .bite-bullet.characteristic-roll,
+  .bite-bullet.faith-roll {
+    border: 2px solid #8b4513;
+    border-radius: 8px;
+    padding: 10px;
+    margin: 5px 0;
+    background: rgba(139, 69, 19, 0.05);
+  }
+  
+  .bite-bullet.damage-roll h3,
+  .bite-bullet.save-roll h3,
+  .bite-bullet.characteristic-roll h3,
+  .bite-bullet.faith-roll h3 {
+    color: #8b4513;
+    margin: 0 0 8px 0;
+    font-size: 16px;
+    border-bottom: 1px solid #8b4513;
+    padding-bottom: 4px;
+  }
+  
+  .bite-bullet .roll-result.success {
+    color: #228b22;
+    font-weight: bold;
+  }
+  
+  .bite-bullet .roll-result.failure {
+    color: #dc143c;
+    font-weight: bold;
+  }
+  
+  .bite-bullet .damage {
+    color: #dc143c;
+    font-weight: bold;
+  }
+  
+  /* ===== FORMS ===== */
+  .bite-bullet input[type="text"],
+  .bite-bullet input[type="number"],
+  .bite-bullet textarea,
+  .bite-bullet select {
+    border: 1px solid #8b4513;
+    background: rgba(255, 255, 255, 0.9);
+    color: #2c1810;
+    padding: 4px;
+    border-radius: 3px;
+  }
+  
+  .bite-bullet input[type="text"]:focus,
+  .bite-bullet input[type="number"]:focus,
+  .bite-bullet textarea:focus,
+  .bite-bullet select:focus {
+    outline: none;
+    border-color: #a0522d;
+    box-shadow: 0 0 5px rgba(139, 69, 19, 0.3);
+  }
+  
+  .bite-bullet .form-group {
+    margin: 10px 0;
+  }
+  
+  .bite-bullet .form-group label {
+    display: block;
+    font-weight: bold;
+    color: #8b4513;
+    margin-bottom: 4px;
+  }
+  
+  /* ===== INVENTORY GRID ===== */
+  .bite-bullet .inventory-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin: 15px 0;
+  }
+  
+  .bite-bullet .inventory-section {
+    border: 2px solid #8b4513;
+    border-radius: 8px;
+    padding: 10px;
+    background: rgba(139, 69, 19, 0.05);
+  }
+  
+  .bite-bullet .inventory-section h3 {
+    color: #8b4513;
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    text-transform: uppercase;
+    border-bottom: 1px solid #8b4513;
+    padding-bottom: 4px;
+  }
+  
+  /* ===== WEAPON DETAILS ===== */
+  .bite-bullet .weapon-details {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin: 10px 0;
+    font-size: 12px;
+  }
+  
+  .bite-bullet .weapon-detail {
+    text-align: center;
+    padding: 4px;
+    background: rgba(139, 69, 19, 0.1);
+    border-radius: 4px;
+  }
+  
+  .bite-bullet .weapon-detail-label {
+    font-weight: bold;
+    color: #8b4513;
+    display: block;
+  }
+  
+  /* ===== BURDEN EFFECTS ===== */
+  .bite-bullet .burden-list {
+    margin: 10px 0;
+  }
+  
+  .bite-bullet .burden {
+    background: rgba(220, 20, 60, 0.1);
+    border-left: 4px solid #dc143c;
+    padding: 8px;
+    margin: 5px 0;
+    border-radius: 0 4px 4px 0;
+  }
+  
+  .bite-bullet .burden-name {
+    font-weight: bold;
+    color: #dc143c;
+  }
+  
+  .bite-bullet .burden-effect {
+    font-size: 12px;
+    color: #666;
+    margin-top: 4px;
+  }
+  
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 600px) {
+    .bite-bullet .attributes {
+      flex-direction: column;
+      gap: 10px;
+    }
+    
+    .bite-bullet .resources {
+      flex-direction: column;
+      gap: 5px;
+    }
+    
+    .bite-bullet .inventory-grid {
+      grid-template-columns: 1fr;
+    }
+  }

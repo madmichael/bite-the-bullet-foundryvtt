@@ -1,0 +1,44 @@
+<form class="bite-bullet item-sheet" autocomplete="off">
+  <header class="sheet-header">
+    <img class="profile-img" src="{{item.img}}" data-edit="img" title="{{item.name}}" height="64" width="64"/>
+    <div class="header-fields">
+      <h1><input name="name" type="text" value="{{item.name}}" placeholder="{{localize 'BITE_BULLET.ItemTypeGear'}}"/></h1>
+    </div>
+  </header>
+
+  <section class="sheet-body">
+    <div class="form-group">
+      <label>Gear Type</label>
+      <input type="text" name="system.gearType" value="{{system.gearType}}" placeholder="mundane|consumable|kit"/>
+    </div>
+
+    <div class="form-group">
+      <label>Uses</label>
+      <div class="resource-value">
+        <input type="number" name="system.uses.value" value="{{system.uses.value}}" data-dtype="Number"/>
+        <span>/</span>
+        <input type="number" name="system.uses.max" value="{{system.uses.max}}" data-dtype="Number"/>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Formula</label>
+      <input type="text" name="system.formula" value="{{system.formula}}" placeholder="e.g., 1d6 healing"/>
+    </div>
+
+    <div class="form-group">
+      <label>Slots</label>
+      <input type="number" name="system.slots" value="{{system.slots}}" data-dtype="Number"/>
+    </div>
+
+    <div class="form-group">
+      <button type="button" class="use-gear">{{localize 'BITE_BULLET.Use'}}</button>
+    </div>
+
+    <hr/>
+    <div class="form-group">
+      <label>{{localize 'BITE_BULLET.Description'}}</label>
+      {{editor system.description target="system.description" button=true owner=owner editable=editable}}
+    </div>
+  </section>
+</form>
