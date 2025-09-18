@@ -1,0 +1,16 @@
+# FoundryVTT: ignore live LevelDB pack directories and lock files
+# Keep .db pack files in packs/ root, but ignore any unpacked/active directories
+Data/systems/bite-the-bullet/packs/*/
+Data/systems/bite-the-bullet/packs/**/LOCK
+Data/systems/bite-the-bullet/packs/**/CURRENT
+Data/systems/bite-the-bullet/packs/**/LOG*
+Data/systems/bite-the-bullet/packs/**/MANIFEST-*
+Data/systems/bite-the-bullet/packs/**/*.ldb
+Data/systems/bite-the-bullet/packs/**/*.sst
+Data/systems/bite-the-bullet/packs/**/*.log
+
+# OS/editor cruft
+.DS_Store
+Thumbs.db
+*.swp
+*.tmp

@@ -175,6 +175,14 @@ Hooks.once('init', async function() {
         ui.notifications.info('Macro created. Drag it from the Macros directory to your hotbar.');
       }
       return macro;
+    },
+    getSpecialItemUuids: () => {
+      try {
+        const raw = game.settings.get('bite-the-bullet', 'specialItemUuids');
+        return raw ? JSON.parse(raw) : {};
+      } catch (e) {
+        return {};
+      }
     }
   };
 
