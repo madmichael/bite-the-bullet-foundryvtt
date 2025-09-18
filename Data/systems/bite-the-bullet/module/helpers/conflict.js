@@ -30,6 +30,7 @@ export async function rollPhysicalDamage({
   isGun = false,
   aoe = false
 } = {}) {
+  const t = game.i18n.localize.bind(game.i18n);
   const formula = chooseDamageFormula(baseFormula, { advantage, disadvantage });
   const roll = new Roll(formula);
   await roll.evaluate();
@@ -51,6 +52,7 @@ export async function rollPhysicalDamage({
   let applied = 0;
   let overflow = 0;
   let triggeredBurden = false;
+  const perTarget = [];
   for (const tgt of affected) {
     if (!tgt) continue;
     const currentSand = Number(tgt.system?.resources?.sand?.value ?? 0);
@@ -68,17 +70,19 @@ export async function rollPhysicalDamage({
     }
     applied += appliedThis;
     overflow += overflowThis;
+    perTarget.push({ name: tgt.name, applied: appliedThis, overflow: overflowThis });
   }
 
   const content = `
     <div class="bite-bullet damage-roll">
       <h3>${attacker?.name ?? "Attack"} - Physical Damage</h3>
       <div><strong>Formula:</strong> ${formula}${advantage ? " (advantage)" : ""}${disadvantage ? " (disadvantage)" : ""}</div>
-      ${affected.length ? `<div><strong>Targets:</strong> ${affected.map(t=>t.name).join(', ')}</div>` : ""}
-      ${armorReduced ? `<div><strong>Armor Reduced:</strong> ${armorReduced}</div>` : ""}
+      ${affected.length ? `<div><strong>${t('CHAT.Targets')}:</strong> ${affected.map(t=>t.name).join(', ')}</div>` : ""}
+      ${armorReduced ? `<div><strong>${t('CHAT.ArmorReduced')}:</strong> ${armorReduced}</div>` : ""}
       <div class="damage">${mitigated}</div>
-      ${affected.length ? `<div><strong>Applied to Sand (total):</strong> ${applied}${overflow ? `, <strong>Overflow to Vigor (total):</strong> ${overflow}` : ''}</div>` : ''}
-      ${aoe && affected.length > 1 ? `<div class="aoe-note"><em>AoE applied to all selected targets (friendly fire).</em></div>` : ''}
+      ${affected.length ? `<div><strong>${t('CHAT.AppliedToSand')} (total):</strong> ${applied}${overflow ? `, <strong>${t('CHAT.OverflowToVigor')} (total):</strong> ${overflow}` : ''}</div>` : ''}
+      ${affected.length && affected.length <= 5 ? `<div class="per-target">${perTarget.map(pt => `<div>• ${pt.name}: ${t('CHAT.AppliedToSand')} ${pt.applied}${pt.overflow ? `, ${t('CHAT.OverflowToVigor')} ${pt.overflow}` : ''}</div>`).join('')}</div>` : ''}
+      ${aoe && affected.length > 1 ? `<div class="aoe-note"><em>${t('CHAT.AoeNoteFriendly')}</em></div>` : ''}
       ${triggeredBurden ? `<div class="burden-note"><em>Burden triggered (Physical).</em></div>` : ''}
     </div>
   `;
@@ -106,7 +110,7 @@ export async function rollSocialDamage({
   // Social armor (if modeled on target)
   let mitigated = roll.total;
   let armorReduced = 0;
-  const socialArmor = Number(target?.system?.socialArmor?.value ?? 0);
+  const socialArmor = Number(target?.system?.details?.socialArmor?.value ?? 0);
   if (target && socialArmor > 0) {
     armorReduced = Math.min(socialArmor, mitigated);
     mitigated = Math.max(0, mitigated - socialArmor);
@@ -136,10 +140,10 @@ export async function rollSocialDamage({
     <div class="bite-bullet damage-roll">
       <h3>${attacker?.name ?? "Exchange"} - Social Pressure</h3>
       <div><strong>Formula:</strong> ${formula}${advantage ? " (advantage)" : ""}${disadvantage ? " (disadvantage)" : ""}</div>
-      ${target ? `<div><strong>Target:</strong> ${target.name}</div>` : ""}
-      ${armorReduced ? `<div><strong>Social Armor Reduced:</strong> ${armorReduced}</div>` : ""}
+      ${target ? `<div><strong>${t('CHAT.Targets')}:</strong> ${target.name}</div>` : ""}
+      ${armorReduced ? `<div><strong>${t('CHAT.SocialArmorReduced')}:</strong> ${armorReduced}</div>` : ""}
       <div class="damage">${mitigated}</div>
-      ${target ? `<div><strong>Applied to Sand:</strong> ${applied}${overflow ? `, <strong>Overflow to Presence:</strong> ${overflow}` : ''}</div>` : ''}
+      ${target ? `<div><strong>${t('CHAT.AppliedToSand')}:</strong> ${applied}${overflow ? `, <strong>${t('CHAT.OverflowToPresence')}:</strong> ${overflow}` : ''}</div>` : ''}
       ${triggeredBurden ? `<div class="burden-note"><em>Burden triggered (Social).</em></div>` : ''}
     </div>
   `;

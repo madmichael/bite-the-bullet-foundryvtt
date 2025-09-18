@@ -30,9 +30,9 @@
     "gridUnits": "ft",
     "primaryTokenAttribute": "system.attributes.vigor.value",
     "secondaryTokenAttribute": "system.resources.sand.value",
-    "url": "",
-    "manifest": "",
-    "download": "",
+    "url": "https://github.com/madmichael/bite-the-bullet-foundryvtt",
+    "manifest": "https://madmichael.github.io/bite-the-bullet-foundryvtt/system.json",
+    "download": "https://github.com/madmichael/bite-the-bullet-foundryvtt/releases/latest/download/bite-the-bullet.zip",
     "packs": [
       {
         "name": "statuses",

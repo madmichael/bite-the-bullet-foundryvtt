@@ -1,0 +1,23 @@
+# Normalize text files; let Git handle line endings appropriately across OSes
+* text=auto
+
+# Ensure common source files are treated as text
+*.js text
+*.json text
+*.html text
+*.css text
+*.md text
+*.yml text
+*.yaml text
+
+# Treat Foundry pack databases and LevelDB internals as binary
+*.db binary
+*.ldb binary
+*.sst binary
+*.log binary
+
+# LevelDB metadata files in pack directories should be binary as well
+Data/systems/bite-the-bullet/packs/**/LOCK binary
+Data/systems/bite-the-bullet/packs/**/CURRENT binary
+Data/systems/bite-the-bullet/packs/**/LOG* binary
+Data/systems/bite-the-bullet/packs/**/MANIFEST-* binary

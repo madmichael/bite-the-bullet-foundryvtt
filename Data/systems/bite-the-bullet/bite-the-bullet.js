@@ -2,7 +2,7 @@
   class ImportStartersMenu extends FormApplication {
     static get defaultOptions() {
       return foundry.utils.mergeObject(super.defaultOptions, {
-        title: 'Import Starter Items',
+        title: game.i18n.localize('IMPORT.DialogTitle'),
         id: 'bite-bullet-import-starters',
         template: null,
         width: 400,
@@ -12,24 +12,24 @@
     async render(force, options) {
       const content = `
         <div style="padding: 8px;">
-          <p>This will import starter Weapons, Armor, and Gear from the system compendia into the World Items directory.</p>
-          <p>Requires GM privileges.</p>
+          <p>${game.i18n.localize('IMPORT.DialogBody')}</p>
+          <p>${game.i18n.localize('IMPORT.GMOnly')}</p>
         </div>`;
       new Dialog({
-        title: 'Import Starter Items',
+        title: game.i18n.localize('IMPORT.DialogTitle'),
         content,
         buttons: {
           import: {
-            label: 'Import Now',
+            label: game.i18n.localize('IMPORT.ImportNow'),
             callback: async () => {
-              if (!game.user.isGM) return ui.notifications.warn('Only GMs can import starter items.');
+              if (!game.user.isGM) return ui.notifications.warn(game.i18n.localize('IMPORT.GMOnly'));
               await game.bitebullet.importStarterItemsToWorld();
             }
           },
           macro: {
-            label: 'Create Macro',
+            label: game.i18n.localize('IMPORT.CreateMacro'),
             callback: async () => {
-              if (!game.user.isGM) return ui.notifications.warn('Only GMs can create this macro.');
+              if (!game.user.isGM) return ui.notifications.warn(game.i18n.localize('IMPORT.GMOnly'));
               await game.bitebullet.createImportMacro();
             }
           }
@@ -40,14 +40,7 @@
     }
   }
 
-  game.settings.registerMenu('bite-the-bullet', 'importStartersMenu', {
-    name: 'Import Starter Items',
-    label: 'Open Import Dialog',
-    hint: 'Import starter Weapons/Armor/Gear into the world or create a reusable macro.',
-    icon: 'fas fa-download',
-    type: ImportStartersMenu,
-    restricted: true
-  });
+  
 /**
  * Bite the Bullet System for Foundry VTT
  */
@@ -113,6 +106,37 @@ Hooks.once('init', async function() {
     default: '{}'
   });
 
+  // Theme toggle (dark or parchment)
+  game.settings.register('bite-the-bullet', 'theme', {
+    name: game.i18n.localize('SETTINGS.ThemeName'),
+    hint: game.i18n.localize('SETTINGS.ThemeHint'),
+    scope: 'client',
+    config: true,
+    type: String,
+    choices: {
+      'dark': game.i18n.localize('SETTINGS.ThemeDark'),
+      'parchment': game.i18n.localize('SETTINGS.ThemeParchment')
+    },
+    default: 'dark',
+    onChange: (val) => {
+      try {
+        const root = document.documentElement;
+        root.classList.remove('bitebullet-theme-dark', 'bitebullet-theme-parchment');
+        root.classList.add(val === 'parchment' ? 'bitebullet-theme-parchment' : 'bitebullet-theme-dark');
+      } catch(e) {}
+    }
+  });
+
+  // Settings menu: Import Starter Items (register within init)
+  game.settings.registerMenu('bite-the-bullet', 'importStartersMenu', {
+    name: game.i18n.localize('IMPORT.MenuName'),
+    label: game.i18n.localize('IMPORT.MenuLabel'),
+    hint: game.i18n.localize('IMPORT.MenuHint'),
+    icon: 'fas fa-download',
+    type: ImportStartersMenu,
+    restricted: true
+  });
+
   // Add utility classes to the global game object so that they're more easily
   // accessible in global contexts.
   game.bitebullet = {
@@ -125,7 +149,7 @@ Hooks.once('init', async function() {
     applyBurden,
     // Utility to import starter items from compendia into the world Item directory
     importStarterItemsToWorld: async () => {
-      if (!game.user.isGM) return ui.notifications.warn('Only GMs can import starter items.');
+      if (!game.user.isGM) return ui.notifications.warn(game.i18n.localize('IMPORT.GMOnly'));
       const packs = [
         game.packs.get('bite-the-bullet.starter-weapons'),
         game.packs.get('bite-the-bullet.starter-armor'),
@@ -146,10 +170,10 @@ Hooks.once('init', async function() {
         });
         if (toCreate.length) await Item.createDocuments(toCreate);
       }
-      ui.notifications.info('Imported starter items into the world.');
+      ui.notifications.info(game.i18n.localize('IMPORT.ImportedToast'));
     },
     createImportMacro: async () => {
-      if (!game.user.isGM) return ui.notifications.warn('Only GMs can create this macro.');
+      if (!game.user.isGM) return ui.notifications.warn(game.i18n.localize('IMPORT.GMOnly'));
       const name = 'Import Starter Items';
       const command = "game.bitebullet.importStarterItemsToWorld();";
       let macro = game.macros?.getName?.(name);
@@ -158,7 +182,7 @@ Hooks.once('init', async function() {
           name,
           type: 'script',
           scope: 'global',
-          img: 'icons/svg/download.svg',
+          img: 'systems/bite-the-bullet/assets/icons/download.svg',
           command
         }, { displaySheet: false });
       }
@@ -170,9 +194,10 @@ Hooks.once('init', async function() {
       }
       if (slot) {
         await game.user.assignHotbarMacro(macro, slot);
-        ui.notifications.info(`Macro placed on hotbar slot ${slot}.`);
+        const msg = game.i18n.localize('IMPORT.MacroPlaced').replace('{slot}', String(slot));
+        ui.notifications.info(msg);
       } else {
-        ui.notifications.info('Macro created. Drag it from the Macros directory to your hotbar.');
+        ui.notifications.info(game.i18n.localize('IMPORT.MacroCreated'));
       }
       return macro;
     },
@@ -220,6 +245,14 @@ Hooks.once('init', async function() {
 
 Hooks.once('ready', async function() {
   try {
+    // Apply theme class on ready
+    try {
+      const theme = game.settings.get('bite-the-bullet', 'theme') || 'dark';
+      const root = document.documentElement;
+      root.classList.remove('bitebullet-theme-dark', 'bitebullet-theme-parchment');
+      root.classList.add(theme === 'parchment' ? 'bitebullet-theme-parchment' : 'bitebullet-theme-dark');
+    } catch (e) {}
+
     // Only GMs should attempt to populate packs
     if (!game.user.isGM) return;
     const t = game.i18n.localize.bind(game.i18n);
@@ -234,25 +267,25 @@ Hooks.once('ready', async function() {
       const existing = new Set(docs.map(d => d.name));
       const defaults = [
         // Faith consequence statuses
-        { name: t('SETTINGS.StatusDoubt'), slots: 0, effect: t('SETTINGS.StatusDoubt') },
-        { name: t('SETTINGS.StatusNightTerrors'), slots: 0, effect: t('SETTINGS.StatusNightTerrors') },
-        { name: t('SETTINGS.StatusSpiritualWeight'), slots: 1, effect: t('SETTINGS.StatusSpiritualWeight') },
-        { name: t('SETTINGS.StatusHaunted'), slots: 0, effect: t('SETTINGS.StatusHaunted') },
+        { name: t('SETTINGS.StatusDoubt'), slots: 0, effect: t('SETTINGS.StatusDoubt'), img: 'icons/svg/eye.svg' },
+        { name: t('SETTINGS.StatusNightTerrors'), slots: 0, effect: t('SETTINGS.StatusNightTerrors'), img: 'icons/svg/sleep.svg' },
+        { name: t('SETTINGS.StatusSpiritualWeight'), slots: 1, effect: t('SETTINGS.StatusSpiritualWeight'), img: 'icons/svg/anchor.svg' },
+        { name: t('SETTINGS.StatusHaunted'), slots: 0, effect: t('SETTINGS.StatusHaunted'), img: 'icons/svg/ghost.svg' },
         // Physical/Social common statuses
-        { name: 'Deprived', slots: 1, effect: 'Cannot recover Sand or attribute damage while Deprived.' },
-        { name: 'Bleeding', slots: 1, effect: 'Cannot regain Sand; lose 1d4 Vigor per day until healed.' },
-        { name: 'Concussed', slots: 1, effect: 'Faith tests at disadvantage until healed by long rest.' },
-        { name: 'Lamed', slots: 2, effect: 'Movement halved until extended rest/doctoring.' },
-        { name: 'Shamed', slots: 1, effect: 'Next Presence test at disadvantage; then remove.' },
-        { name: 'Exposed', slots: 1, effect: 'Presence reduced temporarily; see burden effect for details.' },
-        { name: 'Branded', slots: 1, effect: 'Act last in social conflict until fixed.' },
-        { name: 'Foiled', slots: 1, effect: 'Lose 1d4 Presence per day until healed.' },
-        { name: 'Ostracized', slots: 2, effect: 'Social Saves at disadvantage until removed.' },
-        { name: 'Profaned', slots: 1, effect: 'Cannot regain Sand while present.' },
-        { name: 'Blasphemed', slots: 2, effect: 'All Faith tests at disadvantage until removed.' },
-        { name: 'Shaken', slots: 1, effect: 'Next Faith test at disadvantage; then remove.' },
-        { name: 'Oathless', slots: 1, effect: 'Cannot perform Acts of Faith; lose 1d4 Faith per day.' },
-        { name: 'Excommunicated', slots: 2, effect: 'All Presence Saves at disadvantage until major restitution.' }
+        { name: 'Deprived', slots: 1, effect: 'Cannot recover Sand or attribute damage while Deprived.', img: 'icons/svg/stoned.svg' },
+        { name: 'Bleeding', slots: 1, effect: 'Cannot regain Sand; lose 1d4 Vigor per day until healed.', img: 'icons/svg/blood.svg' },
+        { name: 'Concussed', slots: 1, effect: 'Faith tests at disadvantage until healed by long rest.', img: 'icons/svg/daze.svg' },
+        { name: 'Lamed', slots: 2, effect: 'Movement halved until extended rest/doctoring.', img: 'icons/svg/anchor.svg' },
+        { name: 'Shamed', slots: 1, effect: 'Next Presence test at disadvantage; then remove.', img: 'icons/svg/stoned.svg' },
+        { name: 'Exposed', slots: 1, effect: 'Presence reduced temporarily; see burden effect for details.', img: 'icons/svg/explosion.svg' },
+        { name: 'Branded', slots: 1, effect: 'Act last in social conflict until fixed.', img: 'icons/svg/branding.svg' },
+        { name: 'Foiled', slots: 1, effect: 'Lose 1d4 Presence per day until healed.', img: 'icons/svg/cross.svg' },
+        { name: 'Ostracized', slots: 2, effect: 'Social Saves at disadvantage until removed.', img: 'icons/svg/ruins.svg' },
+        { name: 'Profaned', slots: 1, effect: 'Cannot regain Sand while present.', img: 'icons/svg/unconscious.svg' },
+        { name: 'Blasphemed', slots: 2, effect: 'All Faith tests at disadvantage until removed.', img: 'icons/svg/holy-symbol.svg' },
+        { name: 'Shaken', slots: 1, effect: 'Next Faith test at disadvantage; then remove.', img: 'icons/svg/wind.svg' },
+        { name: 'Oathless', slots: 1, effect: 'Cannot perform Acts of Faith; lose 1d4 Faith per day.', img: 'icons/svg/bones.svg' },
+        { name: 'Excommunicated', slots: 2, effect: 'All Presence Saves at disadvantage until major restitution.', img: 'icons/svg/maze.svg' }
       ];
       for (const def of defaults) {
         if (existing.has(def.name)) continue;
@@ -266,7 +299,8 @@ Hooks.once('ready', async function() {
             remedy: '',
             slots: def.slots,
             description: def.effect
-          }
+          },
+          img: def.img || 'systems/bite-the-bullet/assets/icons/burden-default.svg'
         };
         const doc = new Item(data);
         const imported = await packStatuses.importDocument(doc);

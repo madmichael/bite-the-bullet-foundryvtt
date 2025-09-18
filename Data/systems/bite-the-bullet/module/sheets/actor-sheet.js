@@ -289,23 +289,23 @@ export class BiteBulletActorSheet extends foundry.appv1.sheets.ActorSheet {
           <div class="form-group">
             <label>${t('SETTINGS.ActOfFaithScale')}:</label>
             <select name="scale">
-              <option value="trivial">Trivial (0 Reserve)</option>
-              <option value="minor">Minor (1 Reserve)</option>
-              <option value="moderate">Moderate (2 Reserve)</option>
-              <option value="major">Major (3 Reserve)</option>
-              <option value="legendary">Legendary (4+ Reserve)</option>
+              <option value="trivial">${t('FAITH.ScaleTrivial')}</option>
+              <option value="minor">${t('FAITH.ScaleMinor')}</option>
+              <option value="moderate">${t('FAITH.ScaleModerate')}</option>
+              <option value="major">${t('FAITH.ScaleMajor')}</option>
+              <option value="legendary">${t('FAITH.ScaleLegendary')}</option>
             </select>
           </div>
           <div class="form-group">
             <label>${t('SETTINGS.ActOfFaithTapCharacteristic')}:</label>
             <select name="characteristic">
-              <option value="">None</option>
+              <option value="">${t('FAITH.None')}</option>
               ${Object.keys(this.actor.system.characteristics || {}).map(k => `<option value="${k}">${k}</option>`).join("")}
             </select>
           </div>
           <div class="form-group">
             <label>${t('SETTINGS.ActOfFaithDescription')}:</label>
-            <textarea name="description" placeholder="Describe your act of faith..."></textarea>
+            <textarea name="description" placeholder="${t('FAITH.DescribePlaceholder')}"></textarea>
           </div>
         </form>
       `;
@@ -331,7 +331,8 @@ export class BiteBulletActorSheet extends foundry.appv1.sheets.ActorSheet {
                   extra = Number(this.actor.system.characteristics[charKey]?.rank ?? 0);
                 } else {
                   // Tap was blocked by rule; do not apply modifier
-                  ui.notifications.info(`Characteristic ${charKey} not applied.`);
+                  const msg = game.i18n.format('NOTIFY.CharacteristicNotApplied', { key: charKey });
+                  ui.notifications.info(msg);
                 }
               }
               if (game?.bitebullet?.performActOfFaith) {

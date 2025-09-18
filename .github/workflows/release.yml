@@ -1,0 +1,40 @@
+name: Release System Zip
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Derive version from tag
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Bump version in system.json
+        shell: bash
+        run: |
+          sudo apt-get update && sudo apt-get install -y jq
+          jq --arg v "$VERSION" '.version=$v' Data/systems/bite-the-bullet/system.json > system.tmp && mv system.tmp Data/systems/bite-the-bullet/system.json
+
+      - name: Create archive
+        run: |
+          mkdir -p dist
+          zip -r dist/bite-the-bullet.zip Data/systems/bite-the-bullet -x "**/.git/**" "**/.github/**"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            dist/bite-the-bullet.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

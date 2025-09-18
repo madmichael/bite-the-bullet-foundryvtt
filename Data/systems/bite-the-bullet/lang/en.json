@@ -119,6 +119,18 @@
       "Notes": "Notes",
       "Appearance": "Appearance"
     },
+    "FAITH": {
+      "ScaleTrivial": "Trivial (0 Reserve)",
+      "ScaleMinor": "Minor (1 Reserve)",
+      "ScaleModerate": "Moderate (2 Reserve)",
+      "ScaleMajor": "Major (3 Reserve)",
+      "ScaleLegendary": "Legendary (4+ Reserve)",
+      "DescribePlaceholder": "Describe your act of faith...",
+      "None": "None"
+    },
+    "NOTIFY": {
+      "CharacteristicNotApplied": "Characteristic {key} not applied."
+    },
     "SETTINGS": {
       "FaithFailureUsesStatusName": "Faith Failure: Use Status Consequences",
       "FaithFailureUsesStatusHint": "If enabled, failed Acts of Faith apply a status/condition consequence instead of direct damage.",
@@ -148,5 +160,27 @@
       "Weapon": "Weapon",
       "Target": "Target",
       "Attack": "Attack"
+    },
+    "IMPORT": {
+      "MenuName": "Import Starter Items",
+      "MenuLabel": "Open Import Dialog",
+      "MenuHint": "Import starter Weapons/Armor/Gear into the world or create a reusable macro.",
+      "DialogTitle": "Import Starter Items",
+      "DialogBody": "This will import starter Weapons, Armor, and Gear from the system compendia into the World Items directory.",
+      "ImportNow": "Import Now",
+      "CreateMacro": "Create Macro",
+      "GMOnly": "Only GMs can perform this action.",
+      "ImportedToast": "Imported starter items into the world.",
+      "MacroPlaced": "Macro placed on hotbar slot {slot}.",
+      "MacroCreated": "Macro created. Drag it from the Macros directory to your hotbar."
+    },
+    "CHAT": {
+      "Targets": "Targets",
+      "ArmorReduced": "Armor Reduced",
+      "SocialArmorReduced": "Social Armor Reduced",
+      "AppliedToSand": "Applied to Sand",
+      "OverflowToVigor": "Overflow to Vigor",
+      "OverflowToPresence": "Overflow to Presence",
+      "AoeNoteFriendly": "AoE applied to all selected targets (friendly fire)."
     }
   }

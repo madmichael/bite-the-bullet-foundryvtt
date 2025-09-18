@@ -105,6 +105,11 @@ export class BiteBulletActor extends Actor {
           characteristic.canAdvance = true;
         }
       }
+
+      // Handle attributes
+      for (let [k, v] of Object.entries(systemData.attributes)) {
+        v.label = game.i18n.localize(CONFIG.BITE_BULLET.attributes[k]) ?? k;
+      }
     }
   
     /**
@@ -172,7 +177,7 @@ export class BiteBulletActor extends Actor {
       const formula = `1d20`;
       const roll = new Roll(formula, rollData);
       
-      await roll.evaluate({async: true});
+      await roll.evaluate();
       
       const success = roll.total <= attribute.value;
       const cap = (s) => (s && typeof s === 'string') ? s.charAt(0).toUpperCase() + s.slice(1) : '';

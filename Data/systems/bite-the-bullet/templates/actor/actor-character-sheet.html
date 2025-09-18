@@ -25,7 +25,7 @@
         <div class="attributes">
           {{#each system.attributes as |attribute key|}}
           <div class="attribute">
-            <div class="attribute-label">{{localize (lookup config.attributes key)}}</div>
+            <div class="attribute-label">{{#if attribute.label}}{{attribute.label}}{{else}}{{localize (lookup config.attributes key)}}{{/if}}</div>
             <input class="attribute-value" name="system.attributes.{{key}}.value" type="number" value="{{attribute.value}}" data-dtype="Number"/>
             <button class="save-roll rollable" data-attribute="{{key}}">{{localize "BITE_BULLET.Save"}}</button>
           </div>
@@ -89,7 +89,8 @@
           <h3>{{localize "BITE_BULLET.Characteristics"}}</h3>
           {{#each system.characteristics as |characteristic key|}}
           <div class="characteristic">
-            <div class="characteristic-name">{{localize (lookup config.characteristics key)}}</div>
+            {{!-- Build a tooltip: Title (label) + Subtitle (description) --}}
+            <div class="characteristic-name" title="Title: {{#if characteristic.label}}{{characteristic.label}}{{else}}{{localize (lookup config.characteristics key)}}{{/if}}{{#if characteristic.description}}&#10;Subtitle: {{characteristic.description}}{{/if}}" aria-label="{{#if characteristic.label}}{{characteristic.label}}{{else}}{{localize (lookup config.characteristics key)}}{{/if}}">{{#if characteristic.label}}{{characteristic.label}}{{else}}{{localize (lookup config.characteristics key)}}{{/if}}</div>
             <input class="characteristic-rank" name="system.characteristics.{{key}}.rank" type="number" value="{{characteristic.rank}}" data-dtype="Number" min="1" max="5"/>
             <input class="characteristic-description" name="system.characteristics.{{key}}.description" type="text" value="{{characteristic.description}}" placeholder="{{localize "BITE_BULLET.Description"}}"/>
             <div class="characteristic-uses">{{characteristic.uses}}/{{multiply characteristic.rank 10}}</div>
@@ -222,7 +223,7 @@
   
       <!-- Biography Tab -->
       <div class="tab biography" data-group="primary" data-tab="biography">
-        {{editor system.details.biography.value target="system.details.biography.value" rollData=rollData button=true owner=owner editable=editable}}
+        {{editor system.details.biography.value target="system.details.biography.value" rollData=rollData button=true owner=owner editable=editable engine="prosemirror"}}
       </div>
   
     </section>

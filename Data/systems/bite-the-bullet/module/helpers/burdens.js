@@ -54,7 +54,8 @@ export async function applyBurden(actor, type = 'physical') {
   const t = game.i18n.localize.bind(game.i18n);
   const tbl = tableFor(type);
   const typeLabel = type.charAt(0).toUpperCase() + type.slice(1);
-  const roll = await (new Roll('1d12')).evaluate({ async: true });
+  const roll = new Roll('1d12');
+  await roll.evaluate();
   const idx = Math.clamped ? Math.clamped(roll.total - 1, 0, 11) : Math.min(Math.max(roll.total - 1, 0), 11);
   const entry = tbl[idx];
 
@@ -76,31 +77,68 @@ export async function applyBurden(actor, type = 'physical') {
           label: t('SETTINGS.PerformAct') || 'Apply',
           callback: async () => {
             // Try to auto-apply a specific status item from the statuses compendium if referenced by this entry
+            // Include common Physical/Social/Faith statuses we seeded in the compendium
             const statusNames = new Set([
-              'Deprived','Bleeding','Concussed','Lamed','Shamed','Exposed','Branded','Foiled','Ostracized','Profaned','Blasphemed','Shaken','Oathless','Excommunicated'
+              // Core physical/social
+              'Deprived','Bleeding','Concussed','Lamed','Shamed','Exposed','Branded','Foiled','Ostracized',
+              // Faith-related
+              'Profaned','Blasphemed','Shaken','Oathless','Excommunicated',
+              // Faith failure consequences
+              'Doubt','Night terrors','Spiritual weight','Haunted'
             ]);
             let appliedStatus = false;
-            for (const name of statusNames) {
-              if (entry.effect.toLowerCase().includes(name.toLowerCase())) {
-                const pack = game.packs.get('bite-the-bullet.statuses');
-                if (pack) {
-                  try {
-                    const docs = await pack.getDocuments();
-                    const found = docs.find(d => d.name.toLowerCase() === name.toLowerCase());
-                    if (found) {
-                      const data = found.toObject();
-                      delete data._id;
-                      await actor.createEmbeddedDocuments('Item', [data]);
-                      appliedStatus = true;
-                    }
-                  } catch (e) { /* ignore */ }
+            // Use specialItemUuids map for a robust match first
+            let uuidMap = {};
+            try {
+              const raw = game.settings.get('bite-the-bullet', 'specialItemUuids');
+              uuidMap = raw ? JSON.parse(raw) : {};
+            } catch (e) { uuidMap = {}; }
+            // Build candidate names from entry name and effect text
+            const candidates = new Set();
+            const pushIf = (s) => { if (s && typeof s === 'string') candidates.add(s.trim()); };
+            for (const n of statusNames) pushIf(n);
+            pushIf(entry?.name);
+            // Extract capitalized words that match statusNames substrings
+            const effectText = String(entry?.effect || '');
+            for (const n of statusNames) {
+              if (effectText.toLowerCase().includes(n.toLowerCase())) candidates.add(n);
+            }
+
+            for (const name of candidates) {
+              // Prefer UUID lookup
+              const uuid = uuidMap[name];
+              try {
+                if (uuid) {
+                  const src = await fromUuid(uuid);
+                  if (src) {
+                    const data = src.toObject();
+                    delete data._id;
+                    await actor.createEmbeddedDocuments('Item', [data]);
+                    appliedStatus = true;
+                    continue;
+                  }
                 }
+              } catch (e) { /* ignore and fall back */ }
+              // Fallback: search by name in statuses pack
+              const pack = game.packs.get('bite-the-bullet.statuses');
+              if (pack) {
+                try {
+                  const docs = await pack.getDocuments();
+                  const found = docs.find(d => d.name.toLowerCase() === name.toLowerCase());
+                  if (found) {
+                    const data = found.toObject();
+                    delete data._id;
+                    await actor.createEmbeddedDocuments('Item', [data]);
+                    appliedStatus = true;
+                  }
+                } catch (e) { /* ignore */ }
               }
             }
             // Also create a generic burden record to capture the rolled entry narrative
             const burdenData = {
               name: `${entry.name}`,
               type: 'burden',
+              img: 'systems/bite-the-bullet/assets/icons/burden-default.svg',
               system: {
                 burdenType: type,
                 effect: entry.effect,

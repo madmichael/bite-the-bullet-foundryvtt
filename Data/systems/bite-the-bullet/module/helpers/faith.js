@@ -38,6 +38,7 @@ export async function performActOfFaith(actor, scale, description = "", opts = {
 
   let damageRoll = null;
   let mitigatedDamage = null;
+  let overflowToFaith = 0;
   let usedStatus = false;
   if (!success) {
     const useStatus = game.settings.get('bite-the-bullet', 'faithFailureUsesStatus');
@@ -133,6 +134,7 @@ export async function performActOfFaith(actor, scale, description = "", opts = {
       if (currentSand - dmgTotal < 0) {
         const currentFaith = Number(actor.system?.attributes?.faith?.value ?? 0);
         const overflow = Math.abs(currentSand - dmgTotal);
+        overflowToFaith = overflow;
         const newFaith = Math.max(0, currentFaith - overflow);
         await actor.update({ "system.attributes.faith.value": newFaith });
       }
@@ -147,6 +149,7 @@ export async function performActOfFaith(actor, scale, description = "", opts = {
         <strong>Rolled:</strong> ${roll.total} vs Target: ${target}
         <div class="result">${success ? 'Success!' : 'Failure!'}</div>
         ${!success && mitigatedDamage !== null ? `<div class="damage">Damage: ${mitigatedDamage}</div>` : ''}
+        ${!success && overflowToFaith > 0 ? `<div class="overflow"><strong>Overflow to Faith:</strong> ${overflowToFaith}</div>` : ''}
         ${!success && usedStatus ? `<div class="status-note"><em>${game.i18n.localize('SETTINGS.StatusPickerTitle')}</em></div>` : ''}
       </div>
     </div>

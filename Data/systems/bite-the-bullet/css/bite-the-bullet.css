@@ -6,11 +6,124 @@
     font-family: 'Roboto', sans-serif;
   }
   
+  /* Default to dark theme */
   .bite-bullet .window-content {
-    background: #f8f4e6;
-    background-image: url("../assets/parchment-bg.svg");
+    background: #1a1a1a;
+    background-image: url("../assets/backgrounds/bite-the-bullet-bg.svg");
     background-repeat: repeat;
+    background-size: auto;
   }
+
+  /* Theme: Dark */
+  :root.bitebullet-theme-dark .bite-bullet .window-content {
+    background: #1a1a1a;
+    background-image: url("../assets/backgrounds/bite-the-bullet-bg.svg");
+  }
+
+  /* Dark theme typography and controls */
+  :root.bitebullet-theme-dark .bite-bullet {
+    color: #e6e6e6;
+  }
+  :root.bitebullet-theme-dark .bite-bullet .sheet-header h1,
+  :root.bitebullet-theme-dark .bite-bullet .attribute-label,
+  :root.bitebullet-theme-dark .bite-bullet .resource-label,
+  :root.bitebullet-theme-dark .bite-bullet .characteristic-name,
+  :root.bitebullet-theme-dark .bite-bullet .inventory-section h3,
+  :root.bitebullet-theme-dark .bite-bullet .weapon-detail-label {
+    color: #ffb257;
+  }
+  :root.bitebullet-theme-dark .bite-bullet .characteristic-uses,
+  :root.bitebullet-theme-dark .bite-bullet .burden-effect {
+    color: #d0d0d0;
+  }
+  :root.bitebullet-theme-dark .bite-bullet input[type="text"],
+  :root.bitebullet-theme-dark .bite-bullet input[type="number"],
+  :root.bitebullet-theme-dark .bite-bullet textarea,
+  :root.bitebullet-theme-dark .bite-bullet select {
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+    border-color: #a0522d;
+  }
+  :root.bitebullet-theme-dark .bite-bullet .attribute input,
+  :root.bitebullet-theme-dark .bite-bullet .resource input {
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+    border-color: #a0522d;
+  }
+  :root.bitebullet-theme-dark .bite-bullet .item img {
+    border-color: #a0522d;
+  }
+  :root.bitebullet-theme-dark .bite-bullet .sheet-tabs .item {
+    background: rgba(255, 178, 87, 0.08);
+    color: #ffb257;
+    border-color: #ffb257;
+  }
+  :root.bitebullet-theme-dark .bite-bullet .sheet-tabs .item.active {
+    background: #ffb257;
+    color: #1a1a1a;
+  }
+
+  /* Tighten connection between tabs and content */
+  .bite-bullet .sheet-body {
+    margin-top: 4px;
+  }
+
+  /* Dark theme: make attribute labels and values clearly visible */
+  :root.bitebullet-theme-dark .bite-bullet .attributes .attribute {
+    border-color: #ffb257;
+  }
+  :root.bitebullet-theme-dark .bite-bullet .attributes .attribute-label {
+    color: #ffb257;
+  }
+  :root.bitebullet-theme-dark .bite-bullet .attributes .attribute-value {
+    color: #ffffff;
+  }
+
+  /* Dark theme: Characteristics header and names */
+  :root.bitebullet-theme-dark .bite-bullet .characteristics h3 {
+    color: #ffb257;
+  }
+  :root.bitebullet-theme-dark .bite-bullet .characteristic-name {
+    color: #ffcc80;
+  }
+
+  /* Dark theme: Attack buttons readable */
+  :root.bitebullet-theme-dark .bite-bullet .physical-attack,
+  :root.bitebullet-theme-dark .bite-bullet .social-attack {
+    background: #2a2a2a;
+    color: #ffb257;
+    border: 1px solid #ffb257;
+    padding: 8px 12px;
+    border-radius: 6px;
+  }
+  :root.bitebullet-theme-dark .bite-bullet .physical-attack:hover,
+  :root.bitebullet-theme-dark .bite-bullet .social-attack:hover {
+    background: #ffb257;
+    color: #1a1a1a;
+  }
+
+  /* Theme: Parchment */
+  :root.bitebullet-theme-parchment .bite-bullet .window-content {
+    background: #f8f4e6;
+    background-image: url("../assets/backgrounds/parchment-bg.svg");
+    background-repeat: repeat;
+    background-size: auto;
+  }
+
+  /* Biography editor readability */
+  .bite-bullet .editor,
+  .bite-bullet .editor-content {
+    background: rgba(255,255,255,0.08);
+    color: #e6e6e6;
+    border: 1px solid #a0522d;
+    min-height: 220px;
+    padding: 8px;
+  }
+  .bite-bullet .editor-content a { color: #ffd08a; }
+  .bite-bullet .editor-content h1,
+  .bite-bullet .editor-content h2,
+  .bite-bullet .editor-content h3 { color: #ffb257; }
+  .bite-bullet .editor-content p { color: #e6e6e6; }
   
   /* ===== SHEET HEADERS ===== */
   .bite-bullet .sheet-header {
@@ -261,7 +374,8 @@
   /* ===== TABS ===== */
   .bite-bullet .sheet-tabs {
     border-bottom: 2px solid #8b4513;
-    margin-bottom: 10px;
+    margin-bottom: 6px;
+    padding-bottom: 2px;
   }
   
   .bite-bullet .sheet-tabs .item {
