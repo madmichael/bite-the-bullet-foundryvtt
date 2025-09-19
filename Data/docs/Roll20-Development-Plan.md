@@ -1,4 +1,43 @@
+
+## Appendix: NPC JSON Schema for Roll20 Import (parity with Foundry)
+
+Use a simple array of NPC definitions. Suggested schema aligns with the Foundry importer so content can be shared across platforms.
+
+```json
+[
+  {
+    "name": "Bear",
+    "attributes": { "vigor": 16, "presence": 6, "faith": 3, "sand": 12 },
+    "attacks": [ { "name": "Claw", "damage": "1d6" }, { "name": "Bite", "damage": "1d8" } ],
+    "armor": { "physical": 0, "social": 0, "faith": 0 },
+    "notes": "",
+    "tags": ["beast"]
+  }
+]
+```
+
+- Attributes: maps to sheet attributes for NPC row / section.
+- Attacks: each becomes a repeating attack row with damage/traits.
+- Armor mapping:
+  - physical → armor value
+  - social → social armor value
+  - faith → optional faith-armor toggle or bonus for supernatural defense
+- Notes/Tags: stored as description text and tag chips (optional).
+
 # Bite the Bullet Roll20 Character Sheet Development Plan
+
+## Status Update (v1.0.4)
+
+The FoundryVTT system gained several GM utilities and UX enhancements we also want mirrored (where applicable) in the Roll20 sheet to maintain parity and improve workflows.
+
+- One-click table rolls (Foundry): Buttons in the Character Generator to roll Background/Reputation/Fortitude/Foible/Issue/Armor/Weapons/Gear directly to chat. For Roll20, we will provide equivalent buttons wired to in-sheet tables/roll templates.
+- Tables compendium seeding update (Foundry): System now updates existing RollTable entries on world load (GM-only), ensuring table text stays in sync. Roll20 plan remains to host tables in-sheet, but we’ll keep the data single-sourced in this plan.
+- Clone Tables to World (Foundry): GM utility to clone tables from compendium into the World. Not applicable to Roll20, but the concept informs in-sheet regeneration controls.
+- NPCs compendium (Foundry): Added `Bite the Bullet — NPCs` pack.
+- Import NPCs tool (Foundry): Paste/file-upload JSON to bulk create NPC Actors in compendium or World; supports armor mapping (physical/social/faith) and attack items.
+- Clone NPCs to World (Foundry): GM utility mirrors the tables cloner for NPCs.
+
+Implication for Roll20 parity: We will add an NPC data import section to the Roll20 sheet (GM-only or via API script for Pro) to quickly seed common NPCs and standardize formatting (see NPC schema below).
 
 ## Project Overview
 
@@ -444,6 +483,17 @@ button, input[type="button"], input[type="submit"] {
 
 ## Development Phases
 
+### New Action Items for Parity (post v1.0.4)
+
+- Add in-sheet one-click table roll buttons (Background, Reputation, Fortitude, Foible, Issue, Armor, Weapons, Gear) that output with Roll Templates.
+- Centralize table data (JSON arrays) under a single sheet worker source to match Foundry tables.
+- Add a GM-only NPC import flow for Roll20:
+  - Paste JSON in a textarea and/or upload JSON file (Pro API route optional).
+  - Map armor fields: physical → sheet armor; social → social armor; faith → a faith-armor toggle/bonus.
+  - Create repeating attacks for NPCs from the `attacks` array.
+- Document the NPC JSON schema in this plan (see below) and provide an example file.
+- Add a lightweight “regenerate tables” control for the sheet (GM-only) to reload local table data if updated.
+
 ### Phase 1: Core Sheet Structure (Weeks 1-2)
 **Deliverables:**
 - [x] HTML framework with all attributes and characteristics
@@ -506,6 +556,8 @@ button, input[type="button"], input[type="submit"] {
 - [x] Cross-browser compatibility
 - [x] Performance optimization
 - [x] Documentation and user guide
+- [ ] NPC importer (parity with Foundry import tool)
+- [ ] One-click table rolls (full set) using Roll Templates
 
 **Key Tasks:**
 1. Implement Acts of Faith scaling system
@@ -513,6 +565,8 @@ button, input[type="button"], input[type="submit"] {
 3. Test across all supported browsers
 4. Create user documentation
 5. Prepare for Roll20 marketplace submission
+6. Implement NPC importer from JSON paste/upload
+7. Add one-click table roll buttons and wire to roll templates
 
 ## Success Metrics
 
@@ -559,3 +613,103 @@ button, input[type="button"], input[type="submit"] {
 This Roll20 character sheet will provide a complete, automated, and user-friendly implementation of the Bite the Bullet RPG system. By leveraging Roll20's sheet worker system and responsive design principles, we'll create an experience that matches or exceeds our successful FoundryVTT implementation while being accessible to a broader audience.
 
 The integrated character generator, comprehensive automation, and mobile-first design will make this the definitive way to play Bite the Bullet on Roll20, bringing the full Wild West experience to players across all platforms and devices.
+
+## Roll20 NPC Importer (Stubs)
+
+This section provides drop-in snippets you can paste into the Roll20 sheet when ready. It implements a minimal NPC importer (paste JSON), creates repeating rows for NPCs, and wires a basic NPC attack roll template.
+
+### HTML: NPC Import UI and Repeating NPCs
+
+```html
+<!-- GM-only importer UI (hide via sheet worker if not GM, or leave for development) -->
+<div class="npc-importer">
+  <h3>NPC Importer (JSON)</h3>
+  <textarea name="attr_npc_import_json" placeholder='[ { "name": "Bear", "attributes": { "vigor": 16, "presence": 6, "faith": 3, "sand": 12 }, "attacks": [ { "name": "Claw", "damage": "1d6" } ] } ]'></textarea>
+  <button type="action" name="act_import_npcs">Import NPCs</button>
+</div>
+
+<!-- Repeating NPC block (lightweight) -->
+<fieldset class="repeating_npcs">
+  <input type="text" name="attr_npc_name" placeholder="Name" />
+  <div class="npc-attrs">
+    <input type="number" name="attr_npc_vigor" placeholder="Vig" />
+    <input type="number" name="attr_npc_presence" placeholder="Pre" />
+    <input type="number" name="attr_npc_faith" placeholder="Fth" />
+    <input type="number" name="attr_npc_sand" placeholder="Snd" />
+  </div>
+  <div class="npc-armor">
+    <input type="number" name="attr_npc_armor_physical" placeholder="Armor" />
+    <input type="number" name="attr_npc_armor_social" placeholder="Social" />
+    <input type="number" name="attr_npc_armor_faith" placeholder="Faith" />
+  </div>
+  <!-- Minimal one attack row per NPC; extend to repeating if desired -->
+  <input type="text" name="attr_npc_attack_name" placeholder="Attack" />
+  <input type="text" name="attr_npc_attack_damage" placeholder="1d6" />
+  <button type="roll" name="roll_npc_attack" value="&{template:npc-attack} {{name=@{npc_name}}} {{attack=@{npc_attack_name}}} {{damage=[[ @{npc_attack_damage} ]]}}">Roll Attack</button>
+</fieldset>
+```
+
+### Sheet Workers: Import Logic (paste JSON → create rows)
+
+```javascript
+// Utility: create repeating row and set attributes
+function addRepeating(section, attrs) {
+  const id = generateRowID();
+  const out = {};
+  Object.keys(attrs).forEach((k) => {
+    out[`repeating_${section}_${id}_${k}`] = attrs[k];
+  });
+  setAttrs(out);
+}
+
+// Parse JSON and create minimal NPC rows
+on('clicked:import_npcs', function() {
+  getAttrs(['npc_import_json'], function(values) {
+    try {
+      const arr = JSON.parse(values.npc_import_json || '[]');
+      if (!Array.isArray(arr)) throw new Error('JSON must be an array');
+      arr.forEach((e) => {
+        const a = e.attributes || {};
+        const armor = e.armor || {};
+        const atk = (e.attacks && e.attacks[0]) || { name: 'Attack', damage: '1d6' };
+        addRepeating('npcs', {
+          npc_name: e.name || 'NPC',
+          npc_vigor: Number(a.vigor || a.Vig || 10),
+          npc_presence: Number(a.presence || a.Pre || 10),
+          npc_faith: Number(a.faith || a.Fth || 10),
+          npc_sand: Number(a.sand || a.Snd || 6),
+          npc_armor_physical: Number(armor.physical || 0),
+          npc_armor_social: Number(armor.social || 0),
+          npc_armor_faith: Number(armor.faith || 0),
+          npc_attack_name: atk.name || 'Attack',
+          npc_attack_damage: atk.damage || '1d6'
+        });
+      });
+    } catch (err) {
+      console.error('NPC import failed:', err);
+    }
+  });
+});
+```
+
+### Roll Template: NPC Attack (minimal)
+
+```html
+<rolltemplate class="sheet-rolltemplate-npc-attack">
+  <div class="template-container">
+    <div class="header">{{name}} — {{attack}}</div>
+    <div class="damage">Damage: {{damage}}</div>
+  </div>
+  <style>
+    .sheet-rolltemplate-npc-attack .template-container { border: 2px solid #8b4513; padding: 8px; border-radius: 6px; }
+    .sheet-rolltemplate-npc-attack .header { font-weight: bold; color:#8b4513; margin-bottom:6px; text-align:center; }
+    .sheet-rolltemplate-npc-attack .damage { font-size: 18px; text-align:center; }
+  </style>
+  </rolltemplate>
+```
+
+### Notes
+
+- This importer is intentionally minimal. Extend to support multiple attacks via a nested repeating section (`repeating_npc_attacks`).
+- For GM-only visibility, add a checkbox `attr_is_gm_mode` or leverage a sheet-setting and hide `.npc-importer` via CSS.
+- The schema mirrors our Foundry importer for content parity; you can reuse the same JSON file.

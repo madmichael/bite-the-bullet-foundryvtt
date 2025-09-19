@@ -1,0 +1,92 @@
+[
+    {
+      "name": "Bear",
+      "attributes": { "vigor": 16, "presence": 6, "faith": 3, "sand": 12 },
+      "attacks": [
+        { "name": "Claw", "damage": "1d6" },
+        { "name": "Claw", "damage": "1d6" },
+        { "name": "Bite", "damage": "1d8" }
+      ],
+      "notes": "",
+      "tags": ["beast"]
+    },
+    {
+      "name": "The Black Dog",
+      "attributes": { "vigor": 9, "presence": 6, "faith": 9, "sand": 7 },
+      "attacks": [
+        { "name": "Bite", "damage": "1d6" }
+      ],
+      "notes": "An omen of death and a relentless tracker. Who does he lead to you?",
+      "tags": ["supernatural", "beast"]
+    },
+    {
+      "name": "Jackalope",
+      "attributes": { "vigor": 6, "presence": 11, "faith": 6, "sand": 8 },
+      "attacks": [
+        { "name": "Faith attack", "damage": "1d8", "traits": ["faith"] }
+      ],
+      "notes": "Able to mimic human voices to lure unwary travelers into traps.",
+      "tags": ["supernatural", "beast"],
+      "usesFaith": true
+    },
+    {
+      "name": "Outlaw",
+      "attributes": { "vigor": 7, "presence": 8, "faith": 6, "sand": 6 },
+      "attacks": [
+        { "name": "Revolver", "damage": "1d6", "traits": ["gun", "close", "6 shots"] }
+      ],
+      "notes": "",
+      "tags": ["humanoid"]
+    },
+    {
+      "name": "Thug",
+      "attributes": { "vigor": 7, "presence": 7, "faith": 7, "sand": 6 },
+      "attacks": [
+        { "name": "Club/knife", "damage": "1d4", "traits": ["melee"] }
+      ],
+      "notes": "",
+      "tags": ["humanoid"]
+    },
+    {
+      "name": "Town Leader",
+      "attributes": { "vigor": 10, "presence": 11, "faith": 10, "sand": 6 },
+      "attacks": [
+        { "name": "By weapon", "damage": "1d6", "traits": ["ranged or melee"] }
+      ],
+      "notes": "Often wields underlings and may have Social armor, or Social characteristics. A preacher may also have Acts of Faith and Faith characteristics.",
+      "tags": ["humanoid", "leader"],
+      "armor": { "social": 1 }
+    },
+    {
+      "name": "Skinwalker",
+      "attributes": { "vigor": 7, "presence": 12, "faith": 12, "sand": 8 },
+      "attacks": [
+        { "name": "By weapon", "damage": "1d6" },
+        { "name": "Act of Faith", "damage": "1d6", "traits": ["faith"] }
+      ],
+      "notes": "Skinwalkers often possess Faith armor fetishes and can take the shape of a wolf or coyote, perhaps others.",
+      "tags": ["supernatural", "shapeshifter"],
+      "armor": { "faith": 1 },
+      "usesFaith": true
+    },
+    {
+      "name": "Wendigo",
+      "attributes": { "vigor": 15, "presence": 9, "faith": 8, "sand": 10 },
+      "attacks": [
+        { "name": "Claw", "damage": "1d8" },
+        { "name": "Claw", "damage": "1d8" }
+      ],
+      "notes": "Suggests an insatiable hunger associated with cannibalism.",
+      "tags": ["supernatural"]
+    },
+    {
+      "name": "Will o’ the Wisp",
+      "attributes": { "vigor": 6, "presence": 8, "faith": 6, "sand": 6 },
+      "attacks": [
+        { "name": "Touch", "damage": "1d6", "traits": ["ethereal"] }
+      ],
+      "notes": "Impossible to harm without Faith, or perhaps with cold iron or silver.",
+      "tags": ["supernatural", "spirit"],
+      "usesFaith": true
+    }
+  ]

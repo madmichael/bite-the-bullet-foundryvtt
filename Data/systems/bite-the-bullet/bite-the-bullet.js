@@ -70,6 +70,110 @@
     }
   }
 
+  // Settings menu: Import NPCs (paste JSON)
+  class ImportNpcsMenu extends FormApplication {
+    static get defaultOptions() {
+      return foundry.utils.mergeObject(super.defaultOptions, {
+        title: 'Import NPCs (JSON)',
+        id: 'bite-bullet-import-npcs',
+        width: 600,
+        height: 'auto'
+      });
+    }
+    async render(force, options) {
+      const content = `
+        <div style="padding: 8px;">
+          <p>Paste NPC JSON (array of entries) or select a JSON file, then choose where to import.</p>
+          <div style="margin-bottom:6px;">
+            <input id="npc-file" type="file" accept="application/json" />
+          </div>
+          <textarea id="npc-json" style="width:100%; height:220px;" placeholder='[ { "name": "Bear", "attributes": { "vigor": 16, "presence": 6, "faith": 3, "sand": 12 }, "attacks": [ { "name": "Claw", "damage": "1d6" } ] } ]'></textarea>
+        </div>`;
+      new Dialog({
+        title: 'Import NPCs',
+        content,
+        buttons: {
+          toComp: {
+            label: 'Import to Compendium',
+            callback: async (html) => {
+              if (!game.user.isGM) return ui.notifications.warn('GM only');
+              const fileEl = html[0].querySelector('#npc-file');
+              const textArea = html[0].querySelector('#npc-json');
+              let json = textArea?.value || '';
+              if (fileEl?.files?.[0]) json = await fileEl.files[0].text();
+              await game.bitebullet.importNpcsFromJson(json, { target: 'compendium' });
+            }
+          },
+          toWorld: {
+            label: 'Import to World',
+            callback: async (html) => {
+              if (!game.user.isGM) return ui.notifications.warn('GM only');
+              const fileEl = html[0].querySelector('#npc-file');
+              const textArea = html[0].querySelector('#npc-json');
+              let json = textArea?.value || '';
+              if (fileEl?.files?.[0]) json = await fileEl.files[0].text();
+              await game.bitebullet.importNpcsFromJson(json, { target: 'world' });
+            }
+          },
+          macro: {
+            label: 'Create Import Macro',
+            callback: async () => {
+              if (!game.user.isGM) return ui.notifications.warn('GM only');
+              await game.bitebullet.createImportNpcsMacro();
+            }
+          }
+        },
+        default: 'toComp'
+      }).render(true);
+      return this;
+    }
+  }
+
+  // Settings menu: Clone NPCs to World
+  class CloneNpcsMenu extends FormApplication {
+    static get defaultOptions() {
+      return foundry.utils.mergeObject(super.defaultOptions, {
+        title: 'NPC Tools',
+        id: 'bite-bullet-clone-npcs',
+        width: 420,
+        height: 'auto'
+      });
+    }
+    async render(force, options) {
+      const content = `
+        <div style="padding: 8px;">
+          <p><strong>Clone NPCs to World</strong></p>
+          <p>Clones all NPC Actors from the system compendium <em>Bite the Bullet — NPCs</em> into your World.</p>
+          <ul>
+            <li>Overwrites World actors with the same name.</li>
+            <li>Requires GM permissions.</li>
+          </ul>
+        </div>`;
+      new Dialog({
+        title: 'NPCs: Clone to World',
+        content,
+        buttons: {
+          clone: {
+            label: 'Clone Now',
+            callback: async () => {
+              if (!game.user.isGM) return ui.notifications.warn('GM only');
+              await game.bitebullet.cloneNpcsToWorld();
+            }
+          },
+          macro: {
+            label: 'Create Hotbar Macro',
+            callback: async () => {
+              if (!game.user.isGM) return ui.notifications.warn('GM only');
+              await game.bitebullet.createCloneNpcsMacro();
+            }
+          }
+        },
+        default: 'clone'
+      }).render(true);
+      return this;
+    }
+  }
+
   // Settings menu: Import Starter Items
   class ImportStartersMenu extends FormApplication {
     static get defaultOptions() {
@@ -283,6 +387,26 @@ Hooks.once('init', async function() {
     restricted: true
   });
 
+  // Settings menu: Import NPCs (register within init)
+  game.settings.registerMenu('bite-the-bullet', 'importNpcsMenu', {
+    name: 'Import NPCs',
+    label: 'Import NPCs (JSON)',
+    hint: 'Paste JSON to import NPCs into the NPCs compendium or the World (GM only)',
+    icon: 'fas fa-user-secret',
+    type: ImportNpcsMenu,
+    restricted: true
+  });
+
+  // Settings menu: Clone NPCs (register within init)
+  game.settings.registerMenu('bite-the-bullet', 'cloneNpcsMenu', {
+    name: 'NPC Tools',
+    label: 'NPCs: Clone to World',
+    hint: 'Clone system NPCs compendium into the World (GM only)',
+    icon: 'fas fa-users',
+    type: CloneNpcsMenu,
+    restricted: true
+  });
+
   // Add utility classes to the global game object so that they're more easily
   // accessible in global contexts.
   game.bitebullet = {
@@ -294,6 +418,151 @@ Hooks.once('init', async function() {
     rollSocialDamage,
     applyBurden,
     generateWildWestName,
+    // Import NPCs from JSON pasted in the Import NPCs dialog
+    importNpcsFromJson: async (jsonText, { target = 'compendium' } = {}) => {
+      if (!game.user.isGM) return ui.notifications.warn('GM only');
+      let data;
+      try {
+        data = JSON.parse(jsonText);
+      } catch (e) {
+        console.error('Import NPCs: invalid JSON', e);
+        return ui.notifications.error('Invalid JSON. Please paste a valid JSON array.');
+      }
+      if (!Array.isArray(data)) {
+        return ui.notifications.error('JSON must be an array of NPC definitions.');
+      }
+      const toActorData = (entry) => {
+        const attrs = entry.attributes || {};
+        const items = [];
+        for (const atk of (entry.attacks || [])) {
+          items.push({
+            name: atk.name || 'Attack',
+            type: 'weapon',
+            img: 'icons/svg/sword.svg',
+            system: {
+              damage: atk.damage || '1d6',
+              range: (atk.traits || []).includes('gun') ? 'close' : (atk.traits || []).includes('faith') ? 'close' : 'personal',
+              shots: ((atk.traits || []).find(t => /shots/i.test(t)) || '').match(/(\d+)/)?.[1] ? Number(((atk.traits || []).find(t => /shots/i.test(t)) || '').match(/(\d+)/)[1]) : 0,
+              properties: {
+                aoe: false,
+                melee: !(atk.traits || []).includes('gun'),
+                silent: (atk.traits || []).includes('silent'),
+                concealed: false,
+                throwable: false,
+                isGun: (atk.traits || []).includes('gun')
+              },
+              description: (atk.traits && atk.traits.length) ? `Traits: ${atk.traits.join(', ')}` : ''
+            }
+          });
+        }
+        const type = 'npc';
+        const actor = {
+          name: entry.name || 'NPC',
+          type,
+          img: 'icons/svg/mystery-man.svg',
+          system: {
+            attributes: {
+              vigor: { value: Number(attrs.vigor ?? attrs.Vig ?? 10) },
+              presence: { value: Number(attrs.presence ?? attrs.Pre ?? 10) },
+              faith: { value: Number(attrs.faith ?? attrs.Fth ?? 10) }
+            },
+            resources: {
+              sand: { value: Number(attrs.sand ?? attrs.Snd ?? 6), max: Number(attrs.sand ?? attrs.Snd ?? 6) }
+            },
+            notes: entry.notes || '',
+            armor: { value: Number(entry.armor?.physical ?? 0) },
+            details: { socialArmor: { value: Number(entry.armor?.social ?? 0) } }
+          },
+          items
+        };
+        // Faith armor flag (store under flags)
+        if (entry.armor?.faith) {
+          actor.flags = actor.flags || {};
+          actor.flags.bitebullet = Object.assign({}, actor.flags.bitebullet || {}, { faithArmor: Number(entry.armor.faith) });
+        }
+        return actor;
+      };
+      const actors = data.map(toActorData);
+      let created = 0;
+      if (target === 'world') {
+        const docs = await Actor.createDocuments(actors);
+        created = docs.length;
+      } else {
+        const pack = game.packs.get('bite-the-bullet.npcs');
+        if (!pack) return ui.notifications.error('NPCs compendium not found.');
+        const existing = new Map((await pack.getDocuments()).map(d => [d.name, d]));
+        for (const a of actors) {
+          // Delete existing by name to replace
+          const prev = existing.get(a.name);
+          if (prev) { try { await pack.deleteDocument(prev.id); } catch (e) {} }
+          const doc = new Actor(a);
+          const imported = await pack.importDocument(doc);
+          if (imported) created += 1;
+        }
+      }
+      ui.notifications.info(`Imported ${created} NPC(s) to ${target === 'world' ? 'World' : 'Compendium'}.`);
+      return created;
+    },
+    // Clone NPCs compendium to World (overwrite by name)
+    cloneNpcsToWorld: async () => {
+      if (!game.user.isGM) return ui.notifications.warn('GM only');
+      const pack = game.packs.get('bite-the-bullet.npcs');
+      if (!pack) return ui.notifications.error('NPCs compendium not found.');
+      const docs = await pack.getDocuments();
+      let cloned = 0;
+      for (const npc of docs) {
+        const existing = game.actors.getName(npc.name);
+        if (existing) { try { await existing.delete(); } catch (e) {} }
+        const data = npc.toObject();
+        delete data._id;
+        await Actor.create(data);
+        cloned += 1;
+      }
+      ui.notifications.info(`Cloned ${cloned} NPC(s) into the World.`);
+    },
+    // Macro to run cloneNpcsToWorld
+    createCloneNpcsMacro: async () => {
+      if (!game.user.isGM) return ui.notifications.warn('GM only');
+      const name = 'Clone NPCs to World';
+      let macro = game.macros?.getName?.(name);
+      if (!macro) {
+        macro = await Macro.create({
+          name,
+          type: 'script',
+          scope: 'global',
+          img: 'icons/svg/mystery-man.svg',
+          command: "game.bitebullet.cloneNpcsToWorld();"
+        }, { displaySheet: false });
+      }
+      // Place on first empty hotbar slot
+      let slot = null; const hb = game.user?.hotbar || {};
+      for (let i = 1; i <= 50; i++) { if (!hb[i]) { slot = i; break; } }
+      if (slot) { await game.user.assignHotbarMacro(macro, slot); ui.notifications.info(`Macro placed on hotbar slot ${slot}.`); }
+      else { ui.notifications.info('Macro created. No empty hotbar slot found.'); }
+      return macro;
+    },
+    // Macro to open the Import NPCs dialog directly
+    createImportNpcsMacro: async () => {
+      if (!game.user.isGM) return ui.notifications.warn('GM only');
+      const name = 'Import NPCs (JSON)';
+      const command = "new (game.bitebullet && game.bitebullet.__ImportNpcsMenu || window.ImportNpcsMenu)();";
+      // Fallback: open via settings menu
+      let macro = game.macros?.getName?.(name);
+      if (!macro) {
+        macro = await Macro.create({
+          name,
+          type: 'script',
+          scope: 'global',
+          img: 'icons/svg/mystery-man.svg',
+          command: "game.settings.sheet.render(true); game.settings._menuCallbacks?.get('bite-the-bullet.importNpcsMenu')?.();"
+        }, { displaySheet: false });
+      }
+      let slot = null; const hb = game.user?.hotbar || {};
+      for (let i = 1; i <= 50; i++) { if (!hb[i]) { slot = i; break; } }
+      if (slot) await game.user.assignHotbarMacro(macro, slot);
+      ui.notifications.info(slot ? `Macro placed on hotbar slot ${slot}.` : 'Macro created.');
+      return macro;
+    },
     // Utility to import starter items from compendia into the world Item directory
     importStarterItemsToWorld: async () => {
       if (!game.user.isGM) return ui.notifications.warn(game.i18n.localize('IMPORT.GMOnly'));

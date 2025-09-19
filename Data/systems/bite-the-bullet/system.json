@@ -68,6 +68,13 @@
       "path": "packs/tables.db",
       "type": "RollTable",
       "system": "bite-the-bullet"
+    },
+    {
+      "name": "npcs",
+      "label": "Bite the Bullet — NPCs",
+      "path": "packs/npcs.db",
+      "type": "Actor",
+      "system": "bite-the-bullet"
     }
   ],
   "license": "LICENSE.txt",
