@@ -99,12 +99,8 @@ export class BiteBulletActor extends Actor {
         if (!systemData.details.socialArmor) systemData.details.socialArmor = { value: 0 };
       }
 
-      // Calculate characteristic usage tracking
-      for (let [key, characteristic] of Object.entries(systemData.characteristics)) {
-        if (characteristic.uses >= characteristic.rank * 10) {
-          characteristic.canAdvance = true;
-        }
-      }
+      // Calculate characteristic usage tracking and tap states
+      this._calculateCharacteristicStates(systemData);
 
       // Handle attributes
       for (let [k, v] of Object.entries(systemData.attributes)) {
@@ -122,6 +118,205 @@ export class BiteBulletActor extends Actor {
       const systemData = actorData.system;
     }
   
+    /**
+     * Calculate characteristic states (advancement, disabled status)
+     */
+    _calculateCharacteristicStates(systemData) {
+      const tapTracking = systemData.tapTracking || { globalTapCounter: 0, lastTappedChar: "", tapHistory: [] };
+      const disabledChars = this._getDisabledCharacteristics(tapTracking);
+      
+      for (let [key, characteristic] of Object.entries(systemData.characteristics)) {
+        // Calculate required uses for next rank (rank * 10)
+        const requiredUses = characteristic.rank * 10;
+        characteristic.canAdvance = characteristic.uses >= requiredUses;
+        characteristic.requiredUses = requiredUses;
+        characteristic.isDisabled = disabledChars.includes(key);
+      }
+    }
+
+    /**
+     * Determine which characteristics are disabled based on tap history
+     */
+    _getDisabledCharacteristics(tapTracking) {
+      const { tapHistory } = tapTracking;
+      if (tapHistory.length === 0) return [];
+      
+      // Find all characteristics that need to be disabled
+      const disabledChars = [];
+      const charLastTapIndex = {};
+      
+      // Find the most recent tap index for each characteristic
+      for (let i = tapHistory.length - 1; i >= 0; i--) {
+        const char = tapHistory[i];
+        if (!(char in charLastTapIndex)) {
+          charLastTapIndex[char] = i;
+        }
+      }
+      
+      // For each characteristic, check if it should be disabled
+      for (const [char, lastIndex] of Object.entries(charLastTapIndex)) {
+        // Count unique OTHER characteristics tapped since this char's last tap
+        const uniqueOthersSince = new Set();
+        for (let i = lastIndex + 1; i < tapHistory.length; i++) {
+          if (tapHistory[i] !== char) {
+            uniqueOthersSince.add(tapHistory[i]);
+          }
+        }
+        
+        // If fewer than 2 other characteristics have been tapped since, disable this one
+        if (uniqueOthersSince.size < 2) {
+          disabledChars.push(char);
+        }
+      }
+      
+      return disabledChars;
+    }
+
+    /**
+     * Tap a characteristic for bonus/mitigation
+     */
+    async tapCharacteristic(charKey, context = 'manual') {
+      if (this.type !== 'character') return null;
+      
+      const characteristic = this.system.characteristics[charKey];
+      if (!characteristic) {
+        ui.notifications.warn(`Characteristic ${charKey} not found.`);
+        return null;
+      }
+      
+      // Check if characteristic is disabled
+      if (characteristic.isDisabled) {
+        ui.notifications.warn(`${charKey} is disabled. You must tap 2 other characteristics first.`);
+        return null;
+      }
+      
+      // Update tap tracking
+      const tapTracking = foundry.utils.deepClone(this.system.tapTracking || { globalTapCounter: 0, lastTappedChar: "", tapHistory: [] });
+      tapTracking.globalTapCounter += 1;
+      tapTracking.lastTappedChar = charKey;
+      tapTracking.tapHistory.push(charKey);
+      
+      // Keep tap history reasonable (last 20 taps)
+      if (tapTracking.tapHistory.length > 20) {
+        tapTracking.tapHistory = tapTracking.tapHistory.slice(-20);
+      }
+      
+      // Increment uses
+      const newUses = characteristic.uses + 1;
+      
+      // Update actor
+      await this.update({
+        [`system.characteristics.${charKey}.uses`]: newUses,
+        'system.tapTracking': tapTracking
+      });
+      
+      // Create chat message
+      const bonus = characteristic.rank;
+      const requiredUses = characteristic.rank * 10;
+      const canAdvanceAfter = newUses >= requiredUses;
+      
+      let content = `<div class="bite-bullet tap-result">`;
+      content += `<h3>${this.name} - Characteristic Tap</h3>`;
+      content += `<div><strong>Characteristic:</strong> ${charKey} (Rank ${characteristic.rank})</div>`;
+      content += `<div><strong>Bonus:</strong> +${bonus}</div>`;
+      content += `<div><strong>Uses:</strong> ${newUses}/${requiredUses}</div>`;
+      if (canAdvanceAfter) {
+        content += `<div class="advancement-ready"><strong>Ready for Advancement!</strong> Click the + icon to attempt rank advancement.</div>`;
+      }
+      content += `</div>`;
+      
+      ChatMessage.create({
+        speaker: ChatMessage.getSpeaker({ actor: this }),
+        content,
+        sound: CONFIG.sounds.notification
+      });
+      
+      return { bonus, characteristic: charKey, context };
+    }
+
+    /**
+     * Attempt rank advancement for a characteristic
+     */
+    async attemptRankAdvancement(charKey) {
+      if (this.type !== 'character') return;
+      
+      const characteristic = this.system.characteristics[charKey];
+      if (!characteristic) return;
+      
+      const requiredUses = characteristic.rank * 10;
+      if (characteristic.uses < requiredUses) {
+        ui.notifications.warn(`${charKey} needs ${requiredUses - characteristic.uses} more uses before attempting advancement.`);
+        return;
+      }
+      
+      if (characteristic.rank >= 10) {
+        ui.notifications.info(`${charKey} is already at maximum rank (10).`);
+        return;
+      }
+      
+      // Show advancement dialog
+      const t = game.i18n.localize.bind(game.i18n);
+      const template = `
+        <form>
+          <div class="form-group">
+            <p><strong>Rank Advancement Attempt</strong></p>
+            <p>Characteristic: <strong>${charKey}</strong> (Rank ${characteristic.rank})</p>
+            <p>Uses: ${characteristic.uses}/${requiredUses}</p>
+            <p>Roll 1d6. Success if result > ${characteristic.rank}</p>
+          </div>
+        </form>
+      `;
+      
+      new Dialog({
+        title: `${charKey} Rank Advancement`,
+        content: template,
+        buttons: {
+          roll: {
+            label: 'Roll for Advancement',
+            callback: async () => {
+              const roll = new Roll('1d6');
+              await roll.evaluate();
+              const result = roll.total;
+              const success = result > characteristic.rank;
+              
+              let content = `<div class="bite-bullet rank-advancement">`;
+              content += `<h3>${this.name} - Rank Advancement</h3>`;
+              content += `<div><strong>Characteristic:</strong> ${charKey} (Rank ${characteristic.rank})</div>`;
+              content += `<div><strong>Roll:</strong> ${result} (needed > ${characteristic.rank})</div>`;
+              
+              if (success) {
+                const newRank = characteristic.rank + 1;
+                content += `<div class="success"><strong>SUCCESS!</strong> Rank increased to ${newRank}</div>`;
+                
+                await this.update({
+                  [`system.characteristics.${charKey}.rank`]: newRank,
+                  [`system.characteristics.${charKey}.uses`]: 0
+                });
+              } else {
+                content += `<div class="failure"><strong>FAILURE.</strong> Uses reset, try again after ${requiredUses} more uses.</div>`;
+                
+                await this.update({
+                  [`system.characteristics.${charKey}.uses`]: 0
+                });
+              }
+              
+              content += `</div>`;
+              
+              ChatMessage.create({
+                speaker: ChatMessage.getSpeaker({ actor: this }),
+                content,
+                sound: success ? CONFIG.sounds.notification : CONFIG.sounds.lock
+              });
+            }
+          },
+          cancel: {
+            label: 'Cancel'
+          }
+        },
+        default: 'roll'
+      }).render(true);
+    }
+
     /**
      * Override getRollData() that's supplied to rolls.
      */
@@ -167,9 +362,10 @@ export class BiteBulletActor extends Actor {
     /**
      * Roll a Save
      * @param {string} attributeName - The attribute to save against
-     * @param {Object} options - Roll options
+     * @param {number} tapBonus - Tap bonus to subtract from roll (mitigation)
+     * @param {string} tappedChar - Name of tapped characteristic
      */
-    async rollSave(attributeName, options = {}) {
+    async rollSave(attributeName, tapBonus = 0, tappedChar = null) {
       const attribute = this.system.attributes[attributeName];
       if (!attribute) return;
   
@@ -179,7 +375,9 @@ export class BiteBulletActor extends Actor {
       
       await roll.evaluate();
       
-      const success = roll.total <= attribute.value;
+      // Apply tap bonus as mitigation (subtract from roll)
+      const finalRoll = Math.max(1, roll.total - tapBonus);
+      const success = finalRoll <= attribute.value;
       const cap = (s) => (s && typeof s === 'string') ? s.charAt(0).toUpperCase() + s.slice(1) : '';
       
       // Create chat message
@@ -188,8 +386,10 @@ export class BiteBulletActor extends Actor {
         content: `
           <div class="bite-bullet save-roll">
             <h3>${this.name} - ${cap(attributeName)} Save</h3>
+            <div><strong>Base Roll:</strong> ${roll.total}</div>
+            ${tapBonus > 0 ? `<div><strong>Tap Mitigation:</strong> -${tapBonus} (${tappedChar})</div>` : ""}
+            <div><strong>Final Roll:</strong> ${finalRoll} vs Target: ${attribute.value}</div>
             <div class="roll-result ${success ? 'success' : 'failure'}">
-              <strong>Rolled:</strong> ${roll.total} vs Target: ${attribute.value}
               <div class="result">${success ? 'Success!' : 'Failure!'}</div>
             </div>
           </div>

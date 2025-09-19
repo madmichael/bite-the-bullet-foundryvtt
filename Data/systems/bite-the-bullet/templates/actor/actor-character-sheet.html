@@ -93,8 +93,13 @@
             <div class="characteristic-name" title="Title: {{#if characteristic.label}}{{characteristic.label}}{{else}}{{localize (lookup config.characteristics key)}}{{/if}}{{#if characteristic.description}}&#10;Subtitle: {{characteristic.description}}{{/if}}" aria-label="{{#if characteristic.label}}{{characteristic.label}}{{else}}{{localize (lookup config.characteristics key)}}{{/if}}">{{#if characteristic.label}}{{characteristic.label}}{{else}}{{localize (lookup config.characteristics key)}}{{/if}}</div>
             <input class="characteristic-rank" name="system.characteristics.{{key}}.rank" type="number" value="{{characteristic.rank}}" data-dtype="Number" min="1" max="5"/>
             <input class="characteristic-description" name="system.characteristics.{{key}}.description" type="text" value="{{characteristic.description}}" placeholder="{{localize "BITE_BULLET.Description"}}"/>
-            <div class="characteristic-uses">{{characteristic.uses}}/{{multiply characteristic.rank 10}}</div>
-            <button class="characteristic-tap" data-characteristic="{{key}}">{{localize "BITE_BULLET.Tap"}}</button>
+            <div class="characteristic-uses">{{characteristic.uses}}/{{characteristic.requiredUses}}</div>
+            <div class="characteristic-controls">
+              <button class="characteristic-tap{{#if characteristic.isDisabled}} disabled{{/if}}" data-characteristic="{{key}}" {{#if characteristic.isDisabled}}disabled{{/if}}>{{localize "BITE_BULLET.Tap"}}</button>
+              {{#if characteristic.canAdvance}}
+              <button class="characteristic-advance" data-characteristic="{{key}}" title="Attempt rank advancement">+</button>
+              {{/if}}
+            </div>
           </div>
           {{/each}}
         </div>
@@ -121,7 +126,7 @@
             </h3>
             <ol class="items-list">
               {{#each weapons as |item id|}}
-              <li class="item" data-item-id="{{item._id}}">
+              <li class="item weapon" data-item-id="{{item._id}}">
                 <img src="{{item.img}}" title="{{item.name}}" width="24" height="24"/>
                 <h4 class="item-name">{{item.name}}</h4>
                 <div class="weapon-details">

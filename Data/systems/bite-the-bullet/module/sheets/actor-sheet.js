@@ -167,6 +167,9 @@ export class BiteBulletActorSheet extends foundry.appv1.sheets.ActorSheet {
   
       // Characteristic usage
       html.find('.characteristic-tap').click(this._onCharacteristicTap.bind(this));
+      
+      // Characteristic rank advancement
+      html.find('.characteristic-advance').click(this._onCharacteristicAdvance.bind(this));
   
       // Save rolls
       html.find('.save-roll').click(this._onSaveRoll.bind(this));
@@ -255,7 +258,22 @@ export class BiteBulletActorSheet extends foundry.appv1.sheets.ActorSheet {
       const characteristic = element.dataset.characteristic;
       
       if (characteristic) {
-        await this.actor.rollCharacteristic(characteristic);
+        await this.actor.tapCharacteristic(characteristic, 'manual');
+      }
+    }
+
+    /**
+     * Handle characteristic rank advancement
+     * @param {Event} event   The originating click event
+     * @private
+     */
+    async _onCharacteristicAdvance(event) {
+      event.preventDefault();
+      const element = event.currentTarget;
+      const characteristic = element.dataset.characteristic;
+      
+      if (characteristic) {
+        await this.actor.attemptRankAdvancement(characteristic);
       }
     }
   
@@ -270,7 +288,57 @@ export class BiteBulletActorSheet extends foundry.appv1.sheets.ActorSheet {
       const attribute = element.dataset.attribute;
       
       if (attribute) {
-        await this.actor.rollSave(attribute);
+        // Show dialog for tap selection
+        const t = game.i18n.localize.bind(game.i18n);
+        
+        // Build tap options (available characteristics)
+        const availableChars = Object.entries(this.actor.system.characteristics || {})
+          .filter(([key, char]) => !char.isDisabled)
+          .map(([key, char]) => `<option value="${key}">${key} (Rank ${char.rank}, -${char.rank} to roll)</option>`)
+          .join("");
+        const tapOptions = `<option value="">No Tap</option>${availableChars}`;
+        
+        const template = `
+          <form>
+            <div class="form-group">
+              <p><strong>Save Roll: ${attribute}</strong></p>
+              <p>Roll 1d20 + attribute value. Lower is better.</p>
+            </div>
+            <div class="form-group">
+              <label>Tap Characteristic for Mitigation:</label>
+              <select name="tapChar">${tapOptions}</select>
+            </div>
+          </form>
+        `;
+        
+        new Dialog({
+          title: `${attribute} Save`,
+          content: template,
+          buttons: {
+            roll: {
+              label: 'Roll Save',
+              callback: async (html) => {
+                const form = html[0].querySelector('form');
+                const tapChar = form.tapChar.value;
+                
+                // Handle tap if selected
+                let tapBonus = 0;
+                if (tapChar) {
+                  const tapResult = await this.actor.tapCharacteristic(tapChar, 'save-roll');
+                  if (tapResult) {
+                    tapBonus = tapResult.bonus;
+                  }
+                }
+                
+                await this.actor.rollSave(attribute, tapBonus, tapChar);
+              }
+            },
+            cancel: {
+              label: 'Cancel'
+            }
+          },
+          default: 'roll'
+        }).render(true);
       }
     }
   
@@ -284,6 +352,14 @@ export class BiteBulletActorSheet extends foundry.appv1.sheets.ActorSheet {
       
       // Create dialog to get faith act details
       const t = game.i18n.localize.bind(game.i18n);
+      
+      // Build tap options (available characteristics)
+      const availableChars = Object.entries(this.actor.system.characteristics || {})
+        .filter(([key, char]) => !char.isDisabled)
+        .map(([key, char]) => `<option value="${key}">${key} (Rank ${char.rank}, +${char.rank} bonus)</option>`)
+        .join("");
+      const tapOptions = `<option value="">${t('FAITH.None')}</option>${availableChars}`;
+      
       const template = `
         <form>
           <div class="form-group">
@@ -297,11 +373,8 @@ export class BiteBulletActorSheet extends foundry.appv1.sheets.ActorSheet {
             </select>
           </div>
           <div class="form-group">
-            <label>${t('SETTINGS.ActOfFaithTapCharacteristic')}:</label>
-            <select name="characteristic">
-              <option value="">${t('FAITH.None')}</option>
-              ${Object.keys(this.actor.system.characteristics || {}).map(k => `<option value="${k}">${k}</option>`).join("")}
-            </select>
+            <label>Tap Characteristic for Bonus:</label>
+            <select name="characteristic">${tapOptions}</select>
           </div>
           <div class="form-group">
             <label>${t('SETTINGS.ActOfFaithDescription')}:</label>
@@ -322,21 +395,19 @@ export class BiteBulletActorSheet extends foundry.appv1.sheets.ActorSheet {
               const description = form.description.value;
               const charKey = form.characteristic.value;
               let extra = 0;
+              let tappedChar = null;
+              
               if (charKey) {
-                // Respect the tap rule by attempting to rollCharacteristic which increments uses and enforces history
-                const beforeUses = this.actor.system.characteristics[charKey]?.uses ?? 0;
-                await this.actor.rollCharacteristic(charKey);
-                const afterUses = this.actor.system.characteristics[charKey]?.uses ?? beforeUses;
-                if (afterUses > beforeUses) {
-                  extra = Number(this.actor.system.characteristics[charKey]?.rank ?? 0);
-                } else {
-                  // Tap was blocked by rule; do not apply modifier
-                  const msg = game.i18n.format('NOTIFY.CharacteristicNotApplied', { key: charKey });
-                  ui.notifications.info(msg);
+                // Use the new tap system
+                const tapResult = await this.actor.tapCharacteristic(charKey, 'act-of-faith');
+                if (tapResult) {
+                  extra = tapResult.bonus;
+                  tappedChar = charKey;
                 }
               }
+              
               if (game?.bitebullet?.performActOfFaith) {
-                await game.bitebullet.performActOfFaith(this.actor, scale, description, { extraModifier: extra });
+                await game.bitebullet.performActOfFaith(this.actor, scale, description, { extraModifier: extra, tappedChar });
               } else {
                 await this.actor.rollActOfFaith(scale, description);
               }
@@ -367,11 +438,19 @@ export class BiteBulletActorSheet extends foundry.appv1.sheets.ActorSheet {
       const autoAoe = !!selectedWeapon?.system?.properties?.aoe;
       const options = targets.map(o => `<option value="${o.id}">${o.name}</option>`).join("");
       const weaponOptions = weapons.map(w => `<option value="${w.id}" ${selectedWeapon && w.id===selectedWeapon.id ? 'selected' : ''}>${w.name}</option>`).join("");
+      
+      // Build tap options (available characteristics)
+      const availableChars = Object.entries(this.actor.system.characteristics || {})
+        .filter(([key, char]) => !char.isDisabled)
+        .map(([key, char]) => `<option value="${key}">${key} (Rank ${char.rank}, +${char.rank} bonus)</option>`)
+        .join("");
+      const tapOptions = `<option value="">No Tap</option>${availableChars}`;
       const template = `
         <form>
           <div class="form-group"><label>${t('ATTACK.Weapon')}:</label><select name="weapon" autofocus>${weaponOptions}</select></div>
           <div class="form-group"><label>${t('ATTACK.BaseFormula')}:</label><input type="text" name="base" value="${autoBase}"/></div>
           <div class="form-group"><label>${t('ATTACK.Target')}:</label><select name="target">${options}</select></div>
+          <div class="form-group"><label>Tap Characteristic for Damage Bonus:</label><select name="tapChar">${tapOptions}</select></div>
           <div class="form-group"><label><input type="checkbox" name="adv"/> ${t('ATTACK.Advantage')}</label></div>
           <div class="form-group"><label><input type="checkbox" name="dis"/> ${t('ATTACK.Disadvantage')}</label></div>
           <div class="form-group"><label><input type="checkbox" name="isGun" ${autoIsGun ? 'checked' : ''}/> ${t('ATTACK.IsGun')}</label></div>
@@ -390,14 +469,25 @@ export class BiteBulletActorSheet extends foundry.appv1.sheets.ActorSheet {
               const chosen = weapons.find(w => w.id === weaponId);
               const base = form.base.value || '1d6';
               const targetId = form.target.value;
+              const tapChar = form.tapChar.value;
               const adv = form.adv.checked;
               const dis = form.dis.checked;
               const isGun = form.isGun.checked || !!chosen?.system?.properties?.isGun;
               const aoe = form.aoe.checked || !!chosen?.system?.properties?.aoe;
               const tgt = targets.find(x => x.id === targetId)?.actor ?? null;
               const tgtActors = selectedTokens.map(t => t.actor).filter(Boolean);
+              
+              // Handle tap if selected
+              let tapBonus = 0;
+              if (tapChar) {
+                const tapResult = await this.actor.tapCharacteristic(tapChar, 'physical-attack');
+                if (tapResult) {
+                  tapBonus = tapResult.bonus;
+                }
+              }
+              
               if (game?.bitebullet?.rollPhysicalDamage) {
-                await game.bitebullet.rollPhysicalDamage({ attacker: this.actor, baseFormula: base, target: tgt, targets: tgtActors, advantage: adv, disadvantage: dis, isGun, aoe });
+                await game.bitebullet.rollPhysicalDamage({ attacker: this.actor, baseFormula: base, target: tgt, targets: tgtActors, advantage: adv, disadvantage: dis, isGun, aoe, tapBonus, tappedChar: tapChar });
               }
             }
           },
@@ -415,10 +505,18 @@ export class BiteBulletActorSheet extends foundry.appv1.sheets.ActorSheet {
       const t = game.i18n.localize.bind(game.i18n);
       const targets = canvas?.tokens?.controlled?.length ? canvas.tokens.controlled.map(t => ({ id: t.actor?.id, name: t.name, actor: t.actor })) : [];
       const options = targets.map(o => `<option value="${o.id}">${o.name}</option>`).join("");
+      
+      // Build tap options (available characteristics)
+      const availableChars = Object.entries(this.actor.system.characteristics || {})
+        .filter(([key, char]) => !char.isDisabled)
+        .map(([key, char]) => `<option value="${key}">${key} (Rank ${char.rank}, +${char.rank} bonus)</option>`)
+        .join("");
+      const tapOptions = `<option value="">No Tap</option>${availableChars}`;
       const template = `
         <form>
           <div class="form-group"><label>${t('ATTACK.BaseFormula')}:</label><input type="text" name="base" value="1d6" autofocus/></div>
           <div class="form-group"><label>${t('ATTACK.Target')}:</label><select name="target">${options}</select></div>
+          <div class="form-group"><label>Tap Characteristic for Damage Bonus:</label><select name="tapChar">${tapOptions}</select></div>
           <div class="form-group"><label><input type="checkbox" name="adv"/> ${t('ATTACK.Advantage')}</label></div>
           <div class="form-group"><label><input type="checkbox" name="dis"/> ${t('ATTACK.Disadvantage')}</label></div>
         </form>`;
@@ -432,11 +530,22 @@ export class BiteBulletActorSheet extends foundry.appv1.sheets.ActorSheet {
               const form = html[0].querySelector('form');
               const base = form.base.value || '1d6';
               const targetId = form.target.value;
+              const tapChar = form.tapChar.value;
               const adv = form.adv.checked;
               const dis = form.dis.checked;
               const tgt = targets.find(x => x.id === targetId)?.actor ?? null;
+              
+              // Handle tap if selected
+              let tapBonus = 0;
+              if (tapChar) {
+                const tapResult = await this.actor.tapCharacteristic(tapChar, 'social-attack');
+                if (tapResult) {
+                  tapBonus = tapResult.bonus;
+                }
+              }
+              
               if (game?.bitebullet?.rollSocialDamage) {
-                await game.bitebullet.rollSocialDamage({ attacker: this.actor, baseFormula: base, target: tgt, advantage: adv, disadvantage: dis });
+                await game.bitebullet.rollSocialDamage({ attacker: this.actor, baseFormula: base, target: tgt, advantage: adv, disadvantage: dis, tapBonus, tappedChar: tapChar });
               }
             }
           },

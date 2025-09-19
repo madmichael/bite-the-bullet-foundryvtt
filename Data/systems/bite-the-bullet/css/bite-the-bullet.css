@@ -63,9 +63,65 @@
     color: #1a1a1a;
   }
 
-  /* Tighten connection between tabs and content */
-  .bite-bullet .sheet-body {
-    margin-top: 4px;
+  /* Tabs: professional compact spacing - target the exact nav element */
+  .bite-bullet nav.sheet-tabs.tabs {
+    border-bottom: 2px solid #8b4513;
+    margin: 0 !important;     /* force eliminate all margins */
+    padding: 4px 0 0 0 !important;  /* force minimal top padding only */
+    gap: 8px;                 /* tighter tab spacing */
+    display: flex;
+    align-items: flex-end;
+  }
+
+  /* Fallback for any other tab containers */
+  .bite-bullet .sheet-tabs,
+  .bite-bullet .tabs {
+    margin: 0;
+    padding-top: 4px;
+    padding-bottom: 0;
+  }
+
+  /* Content sits directly below tabs */
+  .bite-bullet .sheet-body { 
+    margin-top: 0; 
+    padding-top: 12px;  /* controlled content spacing */
+  }
+
+  /* Specific tab content spacing fixes */
+  .bite-bullet .tab.inventory {
+    padding-top: 0;
+    margin-top: 0;
+  }
+
+  .bite-bullet .tab.biography {
+    padding-top: 0;
+    margin-top: 0;
+  }
+
+  .bite-bullet .inventory-grid {
+    margin-top: 0;
+    padding-top: 0;
+  }
+
+  .bite-bullet .inventory-section {
+    margin-top: 0;
+    padding-top: 8px;
+  }
+
+  .bite-bullet .inventory-section:first-child {
+    padding-top: 0;
+  }
+
+  /* Biography editor spacing */
+  .bite-bullet .tab.biography .editor {
+    margin-top: 0;
+    padding-top: 0;
+  }
+
+  /* Tab items: compact padding */
+  .bite-bullet .sheet-tabs .item {
+    padding: 4px 12px;  /* much tighter internal spacing */
+    margin-bottom: -2px; /* overlap border for seamless connection */
   }
 
   /* Active tab visually connects to content in dark theme */
@@ -146,12 +202,8 @@
 
   /* Touch targets (mobile): ensure minimum 44px height */
   @media (max-width: 600px) {
-    .bite-bullet button,
-    .bite-bullet .sheet-tabs .item {
-      min-height: 44px;
-      padding-top: 10px;
-      padding-bottom: 10px;
-    }
+    .bite-bullet button { min-height: 44px; padding-top: 10px; padding-bottom: 10px; }
+    .bite-bullet .sheet-tabs .item { min-height: 44px; padding: 10px 14px; }
     .bite-bullet .item-control {
       min-width: 44px;
       min-height: 44px;
@@ -159,6 +211,268 @@
       align-items: center;
       justify-content: center;
     }
+  }
+
+  /* Desktop/tablet: slightly more compact tab height while keeping click comfort */
+  @media (min-width: 601px) {
+    .bite-bullet .sheet-tabs .item { padding: 4px 12px; }
+  }
+
+  /* ===== CHARACTERISTIC TAP STYLING ===== */
+  .bite-bullet .characteristic-controls {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+  }
+
+  .bite-bullet .characteristic-tap {
+    background: #8b4513;
+    color: white;
+    border: 1px solid #a0522d;
+    padding: 4px 8px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 12px;
+    min-width: 40px;
+  }
+
+  .bite-bullet .characteristic-tap:hover {
+    background: #a0522d;
+  }
+
+  .bite-bullet .characteristic-tap.disabled,
+  .bite-bullet .characteristic-tap:disabled {
+    background: #666;
+    color: #999;
+    border-color: #555;
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  .bite-bullet .characteristic-advance {
+    background: #228b22;
+    color: white;
+    border: 1px solid #32cd32;
+    padding: 4px 8px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    min-width: 28px;
+    text-align: center;
+  }
+
+  .bite-bullet .characteristic-advance:hover {
+    background: #32cd32;
+  }
+
+  /* Dark theme adjustments for tap controls */
+  :root.bitebullet-theme-dark .bite-bullet .characteristic-tap {
+    background: #ffb257;
+    color: #1a1a1a;
+    border-color: #ffd08a;
+  }
+
+  :root.bitebullet-theme-dark .bite-bullet .characteristic-tap:hover {
+    background: #ffd08a;
+  }
+
+  :root.bitebullet-theme-dark .bite-bullet .characteristic-tap.disabled,
+  :root.bitebullet-theme-dark .bite-bullet .characteristic-tap:disabled {
+    background: #444;
+    color: #888;
+    border-color: #333;
+  }
+
+  /* Chat message styling for tap results */
+  .bite-bullet.tap-result {
+    background: rgba(139, 69, 19, 0.1);
+    border: 1px solid #8b4513;
+    border-radius: 4px;
+    padding: 8px;
+    color: #2c2c2c;
+  }
+
+  .bite-bullet.tap-result h3 {
+    color: #8b4513;
+    margin-top: 0;
+    margin-bottom: 6px;
+  }
+
+  .bite-bullet.tap-result .advancement-ready {
+    color: #228b22;
+    font-weight: bold;
+    margin-top: 4px;
+  }
+
+  .bite-bullet.rank-advancement {
+    background: rgba(139, 69, 19, 0.1);
+    border: 1px solid #8b4513;
+    border-radius: 4px;
+    padding: 8px;
+    color: #2c2c2c;
+  }
+
+  .bite-bullet.rank-advancement h3 {
+    color: #8b4513;
+    margin-top: 0;
+    margin-bottom: 6px;
+  }
+
+  .bite-bullet.rank-advancement .success {
+    color: #228b22;
+    font-weight: bold;
+  }
+
+  .bite-bullet.rank-advancement .failure {
+    color: #dc143c;
+    font-weight: bold;
+  }
+
+  /* Dark theme chat message adjustments */
+  :root.bitebullet-theme-dark .bite-bullet.tap-result,
+  :root.bitebullet-theme-dark .bite-bullet.rank-advancement {
+    background: rgba(255, 178, 87, 0.1);
+    border-color: #ffb257;
+    color: #e6e6e6;
+  }
+
+  :root.bitebullet-theme-dark .bite-bullet.tap-result h3,
+  :root.bitebullet-theme-dark .bite-bullet.rank-advancement h3 {
+    color: #ffb257;
+  }
+
+  /* Save roll styling */
+  .bite-bullet.save-roll {
+    background: rgba(139, 69, 19, 0.1);
+    border: 1px solid #8b4513;
+    border-radius: 4px;
+    padding: 8px;
+    color: #2c2c2c;
+  }
+
+  .bite-bullet.save-roll h3 {
+    color: #8b4513;
+    margin-top: 0;
+    margin-bottom: 6px;
+  }
+
+  .bite-bullet.save-roll .roll-result.success {
+    color: #228b22;
+    font-weight: bold;
+  }
+
+  .bite-bullet.save-roll .roll-result.failure {
+    color: #dc143c;
+    font-weight: bold;
+  }
+
+  /* Dark theme save roll adjustments */
+  :root.bitebullet-theme-dark .bite-bullet.save-roll {
+    background: rgba(255, 178, 87, 0.1);
+    border-color: #ffb257;
+    color: #e6e6e6;
+  }
+
+  :root.bitebullet-theme-dark .bite-bullet.save-roll h3 {
+    color: #ffb257;
+  }
+
+  /* ===== COMPREHENSIVE DARK THEME TEXT FIXES ===== */
+  /* Ensure ALL text is light colored in dark theme */
+  :root.bitebullet-theme-dark .bite-bullet,
+  :root.bitebullet-theme-dark .bite-bullet *:not(input):not(select):not(textarea) {
+    color: #e6e6e6 !important;
+  }
+
+  /* Override for specific accent colors */
+  :root.bitebullet-theme-dark .bite-bullet .sheet-header h1,
+  :root.bitebullet-theme-dark .bite-bullet .attribute-label,
+  :root.bitebullet-theme-dark .bite-bullet .resource-label,
+  :root.bitebullet-theme-dark .bite-bullet .characteristic-name,
+  :root.bitebullet-theme-dark .bite-bullet .characteristics h3,
+  :root.bitebullet-theme-dark .bite-bullet .inventory-section h3,
+  :root.bitebullet-theme-dark .bite-bullet .weapon-detail-label,
+  :root.bitebullet-theme-dark .bite-bullet .item-name,
+  :root.bitebullet-theme-dark .bite-bullet .item-controls a {
+    color: #ffb257 !important;
+  }
+
+  /* Inventory and item text */
+  :root.bitebullet-theme-dark .bite-bullet .item .item-name,
+  :root.bitebullet-theme-dark .bite-bullet .item .item-description,
+  :root.bitebullet-theme-dark .bite-bullet .item .item-formula,
+  :root.bitebullet-theme-dark .bite-bullet .item .item-uses,
+  :root.bitebullet-theme-dark .bite-bullet .inventory-header,
+  :root.bitebullet-theme-dark .bite-bullet .inventory-item,
+  :root.bitebullet-theme-dark .bite-bullet .weapon-damage,
+  :root.bitebullet-theme-dark .bite-bullet .weapon-range,
+  :root.bitebullet-theme-dark .bite-bullet .weapon-shots {
+    color: #e6e6e6 !important;
+  }
+
+  /* Form labels and placeholders */
+  :root.bitebullet-theme-dark .bite-bullet label,
+  :root.bitebullet-theme-dark .bite-bullet .form-group label,
+  :root.bitebullet-theme-dark .bite-bullet .form-fields label {
+    color: #ffb257 !important;
+  }
+
+  /* Ensure input text is always white */
+  :root.bitebullet-theme-dark .bite-bullet input,
+  :root.bitebullet-theme-dark .bite-bullet textarea,
+  :root.bitebullet-theme-dark .bite-bullet select {
+    color: #ffffff !important;
+    background: rgba(255, 255, 255, 0.12) !important;
+    border-color: #a0522d !important;
+  }
+
+  /* Item controls and buttons */
+  :root.bitebullet-theme-dark .bite-bullet .item-controls .item-control,
+  :root.bitebullet-theme-dark .bite-bullet .item-controls a {
+    color: #ffb257 !important;
+  }
+
+  /* Biography and text areas */
+  :root.bitebullet-theme-dark .bite-bullet .tab.biography,
+  :root.bitebullet-theme-dark .bite-bullet .editor-content,
+  :root.bitebullet-theme-dark .bite-bullet .prosemirror {
+    color: #e6e6e6 !important;
+  }
+
+  /* Weapon and armor details */
+  :root.bitebullet-theme-dark .bite-bullet .weapon-details,
+  :root.bitebullet-theme-dark .bite-bullet .armor-details,
+  :root.bitebullet-theme-dark .bite-bullet .gear-details {
+    color: #e6e6e6 !important;
+  }
+
+  /* Characteristic uses counter */
+  :root.bitebullet-theme-dark .bite-bullet .characteristic-uses {
+    color: #d0d0d0 !important;
+  }
+
+  /* Dark theme weapon layout */
+  :root.bitebullet-theme-dark .bite-bullet .item.weapon .weapon-details {
+    color: #e6e6e6 !important;
+  }
+
+  :root.bitebullet-theme-dark .bite-bullet .item.weapon .weapon-detail-label {
+    color: #ffb257 !important;
+  }
+
+  :root.bitebullet-theme-dark .bite-bullet .item.weapon .weapon-detail-value {
+    color: #e6e6e6 !important;
+  }
+
+  /* Dark theme inventory section + buttons */
+  :root.bitebullet-theme-dark .bite-bullet .inventory-section h3 .item-create {
+    background: #ffb257 !important;
+    color: #1a1a1a !important;
+  }
+
+  :root.bitebullet-theme-dark .bite-bullet .inventory-section h3 .item-create:hover {
+    background: #ffd08a !important;
   }
   
   /* ===== SHEET HEADERS ===== */
@@ -407,13 +721,6 @@
     background: #a0522d;
   }
   
-  /* ===== TABS ===== */
-  .bite-bullet .sheet-tabs {
-    border-bottom: 2px solid #8b4513;
-    margin-bottom: 6px;
-    padding-bottom: 2px;
-  }
-  
   .bite-bullet .sheet-tabs .item {
     background: rgba(139, 69, 19, 0.1);
     border: 1px solid #8b4513;
@@ -527,18 +834,96 @@
     color: #8b4513;
     margin: 0 0 10px 0;
     font-size: 14px;
+    font-weight: bold;
     text-transform: uppercase;
-    border-bottom: 1px solid #8b4513;
-    padding-bottom: 4px;
+    letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 32px; /* Ensure header is tall enough for + button */
+    padding: 4px 0; /* Add some vertical padding */
+  }
+
+  .bite-bullet .inventory-section h3 .item-create {
+    background: #8b4513;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    margin: 0;
+    padding: 0;
+  }
+
+  .bite-bullet .inventory-section h3 .item-create:hover {
+    background: #a0522d;
   }
   
-  /* ===== WEAPON DETAILS ===== */
-  .bite-bullet .weapon-details {
+  /* ===== WEAPON LAYOUT IMPROVEMENTS ===== */
+  .bite-bullet .item.weapon {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-    margin: 10px 0;
+    grid-template-columns: auto 1fr auto;
+    grid-template-rows: auto auto;
+    gap: 8px 10px;
+    align-items: center;
+    padding: 12px;
+  }
+
+  .bite-bullet .item.weapon img {
+    grid-row: 1 / 3;
+    grid-column: 1;
+    width: 36px;
+    height: 36px;
+    border: 1px solid #8b4513;
+    border-radius: 4px;
+  }
+
+  .bite-bullet .item.weapon .item-name {
+    grid-row: 1;
+    grid-column: 2;
+    font-weight: bold;
+    font-size: 16px;
+    margin: 0;
+  }
+
+  .bite-bullet .item.weapon .item-controls {
+    grid-row: 1;
+    grid-column: 3;
+    display: flex;
+    gap: 5px;
+  }
+
+  .bite-bullet .item.weapon .weapon-details {
+    grid-row: 2;
+    grid-column: 2 / 4;
+    display: flex;
+    gap: 20px;
     font-size: 12px;
+  }
+
+  .bite-bullet .weapon-detail {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 4px;
+  }
+
+  .bite-bullet .weapon-detail-label {
+    font-weight: bold;
+    font-size: 10px;
+    text-transform: uppercase;
+    color: #8b4513;
+  }
+
+  .bite-bullet .weapon-detail-value {
+    font-size: 12px;
+    color: #2c1810;
+    font-weight: normal;
   }
   
   .bite-bullet .weapon-detail {

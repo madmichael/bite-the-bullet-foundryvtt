@@ -28,15 +28,18 @@ export async function rollPhysicalDamage({
   advantage = false,
   disadvantage = false,
   isGun = false,
+  tapBonus = 0,
+  tappedChar = null,
   aoe = false
 } = {}) {
   const t = game.i18n.localize.bind(game.i18n);
   const formula = chooseDamageFormula(baseFormula, { advantage, disadvantage });
   const roll = new Roll(formula);
   await roll.evaluate();
+  let dmgTotal = roll.total + tapBonus;
 
   // Basic armor mitigation if present on target
-  let mitigated = roll.total;
+  let mitigated = dmgTotal;
   let armorReduced = 0;
   if (target && !isGun) {
     const armorVal = Number(target?.system?.armor?.value ?? 0);
@@ -78,6 +81,7 @@ export async function rollPhysicalDamage({
     <div class="bite-bullet damage-roll">
       <h3>${attacker?.name ?? "Attack"} - Physical Damage</h3>
       <div><strong>Formula:</strong> ${formula}${advantage ? " (advantage)" : ""}${disadvantage ? " (disadvantage)" : ""}</div>
+      ${tapBonus > 0 ? `<div><strong>Tap Bonus:</strong> +${tapBonus} (${tappedChar})</div>` : ""}
       ${affected.length ? `<div><strong>${t('CHAT.Targets')}:</strong> ${affected.map(t=>t.name).join(', ')}</div>` : ""}
       ${armorReduced ? `<div><strong>${t('CHAT.ArmorReduced')}:</strong> ${armorReduced}</div>` : ""}
       <div class="damage">${mitigated}</div>
@@ -102,14 +106,15 @@ export async function rollSocialDamage({
   baseFormula = "1d6",
   target = null,
   advantage = false,
-  disadvantage = false
+  disadvantage = false,
+  tapBonus = 0,
+  tappedChar = null
 } = {}) {
   const formula = chooseDamageFormula(baseFormula, { advantage, disadvantage });
   const roll = new Roll(formula);
   await roll.evaluate();
-
-  // Social armor (if modeled on target)
-  let mitigated = roll.total;
+  let dmgTotal = roll.total + tapBonus;
+  let mitigated = dmgTotal;
   let armorReduced = 0;
   const socialArmor = Number(target?.system?.details?.socialArmor?.value ?? 0);
   if (target && socialArmor > 0) {
@@ -139,12 +144,13 @@ export async function rollSocialDamage({
 
   const content = `
     <div class="bite-bullet damage-roll">
-      <h3>${attacker?.name ?? "Exchange"} - Social Pressure</h3>
+      <h3>${attacker?.name ?? "Attack"} - Social Damage</h3>
       <div><strong>Formula:</strong> ${formula}${advantage ? " (advantage)" : ""}${disadvantage ? " (disadvantage)" : ""}</div>
-      ${target ? `<div><strong>${t('CHAT.Targets')}:</strong> ${target.name}</div>` : ""}
-      ${armorReduced ? `<div><strong>${t('CHAT.SocialArmorReduced')}:</strong> ${armorReduced}</div>` : ""}
+      ${tapBonus > 0 ? `<div><strong>Tap Bonus:</strong> +${tapBonus} (${tappedChar})</div>` : ""}
+      ${target ? `<div><strong>Target:</strong> ${target.name}</div>` : ""}
+      ${armorReduced ? `<div><strong>Social Armor Reduced:</strong> ${armorReduced}</div>` : ""}
       <div class="damage">${mitigated}</div>
-      ${target ? `<div><strong>${t('CHAT.AppliedToSand')}:</strong> ${applied}${overflow ? `, <strong>${t('CHAT.OverflowToPresence')}:</strong> ${overflow}` : ''}</div>` : ''}
+      ${target ? `<div><strong>Applied to Sand:</strong> ${applied}${overflow ? `, <strong>Overflow to Presence:</strong> ${overflow}` : ''}</div>` : ''}
       ${triggeredBurden ? `<div class="burden-note"><em>Burden triggered (Social).</em></div>` : ''}
     </div>
   `;

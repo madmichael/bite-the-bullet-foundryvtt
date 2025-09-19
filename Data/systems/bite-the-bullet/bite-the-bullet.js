@@ -1,3 +1,53 @@
+  // Settings menu: Character Generator
+  class CharacterGeneratorMenu extends FormApplication {
+    static get defaultOptions() {
+      return foundry.utils.mergeObject(super.defaultOptions, {
+        title: 'Character Generator',
+        id: 'bite-bullet-character-generator',
+        width: 500,
+        height: 'auto'
+      });
+    }
+    async render(force, options) {
+      const content = `
+        <div style="padding: 8px;">
+          <p><strong>Bite the Bullet Character Generator</strong></p>
+          <p>Generate a complete character using the official rules:</p>
+          <ul>
+            <li>Roll attributes (3d6 each, 2d6 for Sand)</li>
+            <li>Roll characteristics from tables</li>
+            <li>Generate starting equipment</li>
+            <li>Calculate inventory and resources</li>
+          </ul>
+          <p><em>Note: This will create a new actor or overwrite an existing one.</em></p>
+        </div>`;
+      new Dialog({
+        title: 'Character Generator',
+        content,
+        buttons: {
+          newActor: {
+            label: 'Generate New Actor',
+            callback: async () => {
+              if (game?.bitebullet?.generateNewCharacter) {
+                await game.bitebullet.generateNewCharacter();
+              }
+            }
+          },
+          existing: {
+            label: 'Regenerate Existing Actor',
+            callback: async () => {
+              if (game?.bitebullet?.regenerateExistingCharacter) {
+                await game.bitebullet.regenerateExistingCharacter();
+              }
+            }
+          }
+        },
+        default: 'newActor'
+      }).render(true);
+      return this;
+    }
+  }
+
   // Settings menu: Import Starter Items
   class ImportStartersMenu extends FormApplication {
     static get defaultOptions() {
@@ -48,17 +98,15 @@
 // Import document classes
 import { BiteBulletActor } from "./module/documents/actor.js";
 import { BiteBulletItem } from "./module/documents/item.js";
-
-// Import sheet classes
-import { BiteBulletActorSheet } from "./module/sheets/actor-sheet.js";
 import { BiteBulletItemSheet } from "./module/sheets/item-sheet.js";
-
-// Import helper/utility classes and constants
-import { BITE_BULLET } from "./module/helpers/config.js";
-import { preloadHandlebarsTemplates } from "./module/helpers/templates.js";
+import { BiteBulletActorSheet } from "./module/sheets/actor-sheet.js";
+import { rollItemMacro } from "./module/helpers/macros.js";
 import { performActOfFaith } from "./module/helpers/faith.js";
 import { rollPhysicalDamage, rollSocialDamage } from "./module/helpers/conflict.js";
 import { applyBurden } from "./module/helpers/burdens.js";
+import { generateCharacter, applyCharacterToActor } from "./module/helpers/character-generator.js";
+import { BITE_BULLET } from "./module/helpers/config.js";
+import { preloadHandlebarsTemplates } from "./module/helpers/templates.js";
 
 /* -------------------------------------------- */
 /*  Init Hook                                   */
@@ -135,6 +183,16 @@ Hooks.once('init', async function() {
     config: true,
     type: Boolean,
     default: true
+  });
+
+  // Settings menu: Character Generator (register within init)
+  game.settings.registerMenu('bite-the-bullet', 'characterGeneratorMenu', {
+    name: 'Character Generator',
+    label: 'Generate Character',
+    hint: 'Generate a new character using the official Bite the Bullet rules',
+    icon: 'fas fa-dice',
+    type: CharacterGeneratorMenu,
+    restricted: false
   });
 
   // Settings menu: Import Starter Items (register within init)
@@ -290,7 +348,108 @@ Hooks.once('init', async function() {
         return {};
       }
     },
-    getUiPrefs: () => ({ showAoePerTarget: game.settings.get('bite-the-bullet', 'showAoePerTarget') })
+    getUiPrefs: () => ({ showAoePerTarget: game.settings.get('bite-the-bullet', 'showAoePerTarget') }),
+    
+    // Character Generator functions
+    generateNewCharacter: async () => {
+      try {
+        // Generate character data
+        const characterData = generateCharacter();
+        
+        // Create new actor
+        const actor = await Actor.create({
+          name: 'Generated Character',
+          type: 'character',
+          img: 'icons/svg/mystery-man.svg'
+        });
+        
+        // Apply character data to actor
+        await applyCharacterToActor(actor, characterData);
+        
+        // Show success message
+        ui.notifications.info(`Character "${actor.name}" generated successfully!`);
+        
+        // Open the character sheet
+        actor.sheet.render(true);
+        
+        return actor;
+      } catch (error) {
+        console.error('Error generating character:', error);
+        ui.notifications.error('Failed to generate character. Check console for details.');
+      }
+    },
+    
+    regenerateExistingCharacter: async () => {
+      // Get all character actors that the user owns
+      const ownedCharacters = game.actors.filter(a => a.type === 'character' && a.isOwner);
+      
+      if (ownedCharacters.length === 0) {
+        ui.notifications.warn('No character actors found. Create a character first.');
+        return;
+      }
+      
+      // Create selection dialog
+      const options = ownedCharacters.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+      const template = `
+        <form>
+          <div class="form-group">
+            <label>Select Character to Regenerate:</label>
+            <select name="actorId">${options}</select>
+          </div>
+          <div class="form-group">
+            <p><strong>Warning:</strong> This will completely overwrite the selected character's attributes, characteristics, and equipment.</p>
+          </div>
+        </form>
+      `;
+      
+      new Dialog({
+        title: 'Regenerate Character',
+        content: template,
+        buttons: {
+          regenerate: {
+            label: 'Regenerate',
+            callback: async (html) => {
+              try {
+                const form = html[0].querySelector('form');
+                const actorId = form.actorId.value;
+                const actor = game.actors.get(actorId);
+                
+                if (!actor) {
+                  ui.notifications.error('Selected actor not found.');
+                  return;
+                }
+                
+                // Clear existing items
+                const existingItems = actor.items.contents;
+                if (existingItems.length > 0) {
+                  await actor.deleteEmbeddedDocuments('Item', existingItems.map(i => i.id));
+                }
+                
+                // Generate new character data
+                const characterData = generateCharacter();
+                
+                // Apply to existing actor
+                await applyCharacterToActor(actor, characterData);
+                
+                ui.notifications.info(`Character "${actor.name}" regenerated successfully!`);
+                
+                // Refresh the sheet if it's open
+                if (actor.sheet.rendered) {
+                  actor.sheet.render(false);
+                }
+              } catch (error) {
+                console.error('Error regenerating character:', error);
+                ui.notifications.error('Failed to regenerate character. Check console for details.');
+              }
+            }
+          },
+          cancel: {
+            label: 'Cancel'
+          }
+        },
+        default: 'regenerate'
+      }).render(true);
+    }
   };
 
   // Add custom constants for configuration.
@@ -592,20 +751,4 @@ async function createItemMacro(data, slot) {
   return false;
 }
 
-/**
- * Create a Macro from an Item drop.
- * Get an existing item macro if one exists, otherwise create a new one.
- * @param {string} itemName
- * @return {Promise}
- */
-function rollItemMacro(itemName) {
-  const speaker = ChatMessage.getSpeaker();
-  let actor;
-  if (speaker.token) actor = game.actors.tokens[speaker.token];
-  if (!actor) actor = game.actors.get(speaker.actor);
-  const item = actor ? actor.items.find(i => i.name === itemName) : null;
-  if (!item) return ui.notifications.warn(`Your controlled Actor does not have an item named ${itemName}`);
-
-  // Trigger the item roll
-  return item.roll();
-}
+// rollItemMacro function is imported from module/helpers/macros.js

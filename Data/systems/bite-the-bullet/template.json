@@ -90,6 +90,11 @@
             "uses": 0
           }
         },
+        "tapTracking": {
+          "globalTapCounter": 0,
+          "lastTappedChar": "",
+          "tapHistory": []
+        },
         "gear": {
           "lead": {
             "value": 0,
