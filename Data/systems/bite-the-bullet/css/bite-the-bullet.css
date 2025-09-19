@@ -68,6 +68,12 @@
     margin-top: 4px;
   }
 
+  /* Active tab visually connects to content in dark theme */
+  :root.bitebullet-theme-dark .bite-bullet .sheet-tabs .item.active {
+    border-bottom: 2px solid #1a1a1a; /* same as content bg */
+    box-shadow: 0 2px 0 0 #1a1a1a; /* bridge the seam */
+  }
+
   /* Dark theme: make attribute labels and values clearly visible */
   :root.bitebullet-theme-dark .bite-bullet .attributes .attribute {
     border-color: #ffb257;
@@ -124,6 +130,36 @@
   .bite-bullet .editor-content h2,
   .bite-bullet .editor-content h3 { color: #ffb257; }
   .bite-bullet .editor-content p { color: #e6e6e6; }
+
+  /* Accessibility: focus-visible outlines */
+  .bite-bullet .sheet-tabs .item:focus-visible,
+  .bite-bullet button:focus-visible,
+  .bite-bullet .item-control:focus-visible,
+  .bite-bullet select:focus-visible,
+  .bite-bullet input:focus-visible {
+    outline: 2px solid #ffb257;
+    outline-offset: 2px;
+  }
+
+  /* iOS tap highlight removal for cleaner feel */
+  .bite-bullet { -webkit-tap-highlight-color: transparent; }
+
+  /* Touch targets (mobile): ensure minimum 44px height */
+  @media (max-width: 600px) {
+    .bite-bullet button,
+    .bite-bullet .sheet-tabs .item {
+      min-height: 44px;
+      padding-top: 10px;
+      padding-bottom: 10px;
+    }
+    .bite-bullet .item-control {
+      min-width: 44px;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+  }
   
   /* ===== SHEET HEADERS ===== */
   .bite-bullet .sheet-header {

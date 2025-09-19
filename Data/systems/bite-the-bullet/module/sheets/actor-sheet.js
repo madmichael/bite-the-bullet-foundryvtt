@@ -369,7 +369,7 @@ export class BiteBulletActorSheet extends foundry.appv1.sheets.ActorSheet {
       const weaponOptions = weapons.map(w => `<option value="${w.id}" ${selectedWeapon && w.id===selectedWeapon.id ? 'selected' : ''}>${w.name}</option>`).join("");
       const template = `
         <form>
-          <div class="form-group"><label>${t('ATTACK.Weapon')}:</label><select name="weapon">${weaponOptions}</select></div>
+          <div class="form-group"><label>${t('ATTACK.Weapon')}:</label><select name="weapon" autofocus>${weaponOptions}</select></div>
           <div class="form-group"><label>${t('ATTACK.BaseFormula')}:</label><input type="text" name="base" value="${autoBase}"/></div>
           <div class="form-group"><label>${t('ATTACK.Target')}:</label><select name="target">${options}</select></div>
           <div class="form-group"><label><input type="checkbox" name="adv"/> ${t('ATTACK.Advantage')}</label></div>
@@ -417,7 +417,7 @@ export class BiteBulletActorSheet extends foundry.appv1.sheets.ActorSheet {
       const options = targets.map(o => `<option value="${o.id}">${o.name}</option>`).join("");
       const template = `
         <form>
-          <div class="form-group"><label>${t('ATTACK.BaseFormula')}:</label><input type="text" name="base" value="1d6"/></div>
+          <div class="form-group"><label>${t('ATTACK.BaseFormula')}:</label><input type="text" name="base" value="1d6" autofocus/></div>
           <div class="form-group"><label>${t('ATTACK.Target')}:</label><select name="target">${options}</select></div>
           <div class="form-group"><label><input type="checkbox" name="adv"/> ${t('ATTACK.Advantage')}</label></div>
           <div class="form-group"><label><input type="checkbox" name="dis"/> ${t('ATTACK.Disadvantage')}</label></div>

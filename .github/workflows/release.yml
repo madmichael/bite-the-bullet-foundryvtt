@@ -13,6 +13,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Derive version from tag
         shell: bash
@@ -20,11 +22,44 @@ jobs:
           VERSION="${GITHUB_REF_NAME#v}"
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
+      - name: Prepare git user
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Switch to main branch
+        run: |
+          git fetch origin main || true
+          git checkout main || git checkout -b main
+          git pull --ff-only || true
+
       - name: Bump version in system.json
         shell: bash
         run: |
           sudo apt-get update && sudo apt-get install -y jq
           jq --arg v "$VERSION" '.version=$v' Data/systems/bite-the-bullet/system.json > system.tmp && mv system.tmp Data/systems/bite-the-bullet/system.json
+
+      - name: Generate CHANGELOG.md entry
+        shell: bash
+        run: |
+          DATE=$(date -u +%Y-%m-%d)
+          PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -n "$PREV_TAG" ]; then RANGE="$PREV_TAG..HEAD"; else RANGE=""; fi
+          COMMITS=$(git log --pretty=format:"- %s (%h)" $RANGE || true)
+          if [ -z "$COMMITS" ]; then COMMITS="- Initial release"; fi
+          {
+            echo "## v$VERSION - $DATE";
+            echo "";
+            echo "$COMMITS";
+            echo "";
+            if [ -f CHANGELOG.md ]; then cat CHANGELOG.md; fi
+          } > CHANGELOG.tmp && mv CHANGELOG.tmp CHANGELOG.md
+
+      - name: Commit version and changelog
+        run: |
+          git add CHANGELOG.md Data/systems/bite-the-bullet/system.json
+          git commit -m "chore(release): v$VERSION" || echo "No changes to commit"
+          git push origin main || true
 
       - name: Create archive
         run: |
@@ -36,5 +71,6 @@ jobs:
         with:
           files: |
             dist/bite-the-bullet.zip
+          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -147,7 +147,13 @@
       "StatusDoubt": "Doubt",
       "StatusNightTerrors": "Night terrors",
       "StatusSpiritualWeight": "Spiritual weight",
-      "StatusHaunted": "Haunted"
+      "StatusHaunted": "Haunted",
+      "ThemeName": "Theme",
+      "ThemeHint": "Choose the sheet theme (Dark or Parchment).",
+      "ThemeDark": "Dark",
+      "ThemeParchment": "Parchment",
+      "ShowAoePerTargetName": "Show AoE per-target lines",
+      "ShowAoePerTargetHint": "Include a short line per target when AoE affects 5 or fewer targets."
     },
     "ATTACK": {
       "PhysicalAttackTitle": "Physical Attack",

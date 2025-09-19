@@ -73,6 +73,7 @@ export async function rollPhysicalDamage({
     perTarget.push({ name: tgt.name, applied: appliedThis, overflow: overflowThis });
   }
 
+  const showPerTarget = !!(game?.bitebullet?.getUiPrefs && game.bitebullet.getUiPrefs().showAoePerTarget);
   const content = `
     <div class="bite-bullet damage-roll">
       <h3>${attacker?.name ?? "Attack"} - Physical Damage</h3>
@@ -81,7 +82,7 @@ export async function rollPhysicalDamage({
       ${armorReduced ? `<div><strong>${t('CHAT.ArmorReduced')}:</strong> ${armorReduced}</div>` : ""}
       <div class="damage">${mitigated}</div>
       ${affected.length ? `<div><strong>${t('CHAT.AppliedToSand')} (total):</strong> ${applied}${overflow ? `, <strong>${t('CHAT.OverflowToVigor')} (total):</strong> ${overflow}` : ''}</div>` : ''}
-      ${affected.length && affected.length <= 5 ? `<div class="per-target">${perTarget.map(pt => `<div>• ${pt.name}: ${t('CHAT.AppliedToSand')} ${pt.applied}${pt.overflow ? `, ${t('CHAT.OverflowToVigor')} ${pt.overflow}` : ''}</div>`).join('')}</div>` : ''}
+      ${affected.length && affected.length <= 5 && showPerTarget ? `<div class="per-target">${perTarget.map(pt => `<div>• ${pt.name}: ${t('CHAT.AppliedToSand')} ${pt.applied}${pt.overflow ? `, ${t('CHAT.OverflowToVigor')} ${pt.overflow}` : ''}</div>`).join('')}</div>` : ''}
       ${aoe && affected.length > 1 ? `<div class="aoe-note"><em>${t('CHAT.AoeNoteFriendly')}</em></div>` : ''}
       ${triggeredBurden ? `<div class="burden-note"><em>Burden triggered (Physical).</em></div>` : ''}
     </div>

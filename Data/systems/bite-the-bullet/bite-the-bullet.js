@@ -4,7 +4,6 @@
       return foundry.utils.mergeObject(super.defaultOptions, {
         title: game.i18n.localize('IMPORT.DialogTitle'),
         id: 'bite-bullet-import-starters',
-        template: null,
         width: 400,
         height: 'auto'
       });
@@ -36,7 +35,8 @@
         },
         default: 'import'
       }).render(true);
-      return super.render(force, options);
+      // Do not call super.render to avoid template resolution; this menu only shows a Dialog
+      return this;
     }
   }
 
@@ -127,6 +127,16 @@ Hooks.once('init', async function() {
     }
   });
 
+  // Client setting: show AoE per-target lines (when targets <= 5)
+  game.settings.register('bite-the-bullet', 'showAoePerTarget', {
+    name: game.i18n.localize('SETTINGS.ShowAoePerTargetName'),
+    hint: game.i18n.localize('SETTINGS.ShowAoePerTargetHint'),
+    scope: 'client',
+    config: true,
+    type: Boolean,
+    default: true
+  });
+
   // Settings menu: Import Starter Items (register within init)
   game.settings.registerMenu('bite-the-bullet', 'importStartersMenu', {
     name: game.i18n.localize('IMPORT.MenuName'),
@@ -150,17 +160,20 @@ Hooks.once('init', async function() {
     // Utility to import starter items from compendia into the world Item directory
     importStarterItemsToWorld: async () => {
       if (!game.user.isGM) return ui.notifications.warn(game.i18n.localize('IMPORT.GMOnly'));
-      const packs = [
-        game.packs.get('bite-the-bullet.starter-weapons'),
-        game.packs.get('bite-the-bullet.starter-armor'),
-        game.packs.get('bite-the-bullet.starter-gear')
-      ].filter(Boolean);
-      for (const pack of packs) {
+      let created = 0;
+      let usedFallback = false;
+      const packs = {
+        weapons: game.packs.get('bite-the-bullet.starter-weapons'),
+        armor: game.packs.get('bite-the-bullet.starter-armor'),
+        gear: game.packs.get('bite-the-bullet.starter-gear')
+      };
+      // Helper to import from a pack when available
+      const importFromPack = async (pack) => {
+        if (!pack) return 0;
         const docs = await pack.getDocuments();
         const toCreate = docs.map(d => {
           const obj = d.toObject();
-          delete obj._id; // ensure new world document
-          // Tag source for robust detection
+          delete obj._id;
           obj.flags = obj.flags || {};
           obj.flags.bitebullet = Object.assign({}, obj.flags.bitebullet || {}, {
             sourceName: d.name,
@@ -168,9 +181,77 @@ Hooks.once('init', async function() {
           });
           return obj;
         });
-        if (toCreate.length) await Item.createDocuments(toCreate);
+        if (toCreate.length) {
+          await Item.createDocuments(toCreate);
+        }
+        return toCreate.length;
+      };
+
+      // Try packs first
+      created += await importFromPack(packs.weapons);
+      created += await importFromPack(packs.armor);
+      created += await importFromPack(packs.gear);
+
+      // Fallback: seed defaults directly if packs missing/empty
+      if (created === 0) {
+        usedFallback = true;
+        const toCreate = [];
+        const weapons = [
+          { name: 'Revolver', damage: '1d6', shots: 6, range: 'close', props: { isGun: true }, img: 'icons/weapons/pistols/pistol-revolver.webp', description: 'Six-shooter sidearm. Reliable and quick to draw.' },
+          { name: 'Lever-action rifle', damage: '1d6', shots: 5, range: 'medium', props: { isGun: true }, img: 'icons/weapons/crossbows/rifle-brown.webp', description: 'Trusty longarm for the trail. Better at range.' },
+          { name: 'Coach gun', damage: '1d6', shots: 2, range: 'close', props: { isGun: true, aoe: true }, img: 'icons/weapons/guns/gun-double-barrel.webp', description: 'Double-barrel scattergun. AoE; beware friendly fire.' }
+        ];
+        for (const w of weapons) {
+          toCreate.push({
+            name: w.name,
+            type: 'weapon',
+            img: w.img || 'icons/svg/sword.svg',
+            system: {
+              damage: w.damage,
+              range: w.range,
+              shots: w.shots,
+              properties: Object.assign({ aoe: false, melee: false, silent: false, concealed: false, throwable: false, isGun: false }, w.props),
+              description: w.description || ''
+            }
+          });
+        }
+        const armor = [
+          { name: 'Duster coat', value: 1, img: 'icons/equipment/chest/coat-leather-brown.webp', description: 'Long coat that turns the wind and a little lead.' },
+          { name: "Rancher's vest", value: 2, img: 'icons/equipment/chest/vest-leather-brown.webp', description: 'Sturdy vest; better than nothing in a shootout.' }
+        ];
+        for (const a of armor) {
+          toCreate.push({
+            name: a.name,
+            type: 'armor',
+            img: a.img || 'icons/svg/shield.svg',
+            system: { armorType: 'light', armor: { value: a.value, type: 'physical' }, description: a.description || '' }
+          });
+        }
+        const gear = [
+          { name: 'Bone-ward fetish', description: 'A charm against the uncanny. When enabled by GM setting, provides +1 Social mitigation and reduces Act of Faith failure damage by 1 if carried.', slots: 0, icon: 'icons/svg/mystery-man.svg' },
+          { name: 'Canteen', description: 'Water on the trail; refreshes between scenes.', slots: 0 }
+        ];
+        for (const g of gear) {
+          toCreate.push({
+            name: g.name,
+            type: 'gear',
+            img: g.icon || 'icons/svg/item-bag.svg',
+            system: { gearType: 'mundane', uses: { value: 1, max: 1, per: null }, formula: '', slots: g.slots ?? 0, description: g.description || '' }
+          });
+        }
+        if (toCreate.length) {
+          const createdDocs = await Item.createDocuments(toCreate);
+          created += createdDocs.length;
+        }
       }
-      ui.notifications.info(game.i18n.localize('IMPORT.ImportedToast'));
+
+      // Notify results
+      if (created > 0) {
+        const note = usedFallback ? ' (fallback defaults used)' : '';
+        ui.notifications.info(`${created} starter items imported${note}.`);
+      } else {
+        ui.notifications.warn('No starter items were found to import. Check that the system compendium packs exist and are unlocked, or try again.');
+      }
     },
     createImportMacro: async () => {
       if (!game.user.isGM) return ui.notifications.warn(game.i18n.localize('IMPORT.GMOnly'));
@@ -208,7 +289,8 @@ Hooks.once('init', async function() {
       } catch (e) {
         return {};
       }
-    }
+    },
+    getUiPrefs: () => ({ showAoePerTarget: game.settings.get('bite-the-bullet', 'showAoePerTarget') })
   };
 
   // Add custom constants for configuration.
@@ -314,15 +396,15 @@ Hooks.once('ready', async function() {
       const docs = await packWeapons.getDocuments();
       const existing = new Set(docs.map(d => d.name));
       const items = [
-        { name: 'Revolver', damage: '1d6', shots: 6, range: 'close', props: { isGun: true }, img: 'icons/weapons/pistols/pistol-revolver.webp', description: 'Six-shooter sidearm. Reliable and quick to draw.' },
-        { name: 'Lever-action rifle', damage: '1d6', shots: 5, range: 'medium', props: { isGun: true }, img: 'icons/weapons/crossbows/rifle-brown.webp', description: 'Trusty longarm for the trail. Better at range.' },
-        { name: 'Coach gun', damage: '1d6', shots: 2, range: 'close', props: { isGun: true, aoe: true }, img: 'icons/weapons/guns/gun-double-barrel.webp', description: 'Double-barrel scattergun. AoE; beware friendly fire.' },
-        { name: 'Knife', damage: '1d4', shots: 0, range: 'personal', props: { melee: true, concealed: true }, img: 'icons/weapons/daggers/dagger-straight.webp', description: 'A small blade, easily concealed.' },
-        { name: 'Long knife', damage: '1d6', shots: 0, range: 'personal', props: { melee: true }, img: 'icons/weapons/daggers/dagger-wavy.webp', description: 'Heavier blade for close-in work.' },
-        { name: 'Saber', damage: '1d6', shots: 0, range: 'personal', props: { melee: true }, img: 'icons/weapons/swords/sword-guard.webp', description: 'A gentleman’s sword; may find use in social conflict.' },
-        { name: 'Tomahawk', damage: '1d6', shots: 0, range: 'personal', props: { melee: true, throwable: true }, img: 'icons/weapons/axes/axe-broad.webp', description: 'Light axe, can be thrown (Close).' },
-        { name: 'Bullwhip', damage: '1d4', shots: 0, range: 'close', props: { }, img: 'icons/tools/hand/whip-braided-brown.webp', description: 'Entangle or disarm. Narratively impair on a hit.' },
-        { name: 'Bow & arrows', damage: '1d6', shots: 6, range: 'close', props: { silent: true }, img: 'icons/weapons/bows/shortbow-leather.webp', description: 'Silent and deadly with steady hands.' }
+        { name: 'Revolver', damage: '1d6', shots: 6, range: 'close', props: { isGun: true }, img: 'systems/bite-the-bullet/assets/icons/weapon-default.svg', description: 'Six-shooter sidearm. Reliable and quick to draw.' },
+        { name: 'Lever-action rifle', damage: '1d6', shots: 5, range: 'medium', props: { isGun: true }, img: 'systems/bite-the-bullet/assets/icons/weapon-default.svg', description: 'Trusty longarm for the trail. Better at range.' },
+        { name: 'Coach gun', damage: '1d6', shots: 2, range: 'close', props: { isGun: true, aoe: true }, img: 'systems/bite-the-bullet/assets/icons/weapon-default.svg', description: 'Double-barrel scattergun. AoE; beware friendly fire.' },
+        { name: 'Knife', damage: '1d4', shots: 0, range: 'personal', props: { melee: true, concealed: true }, img: 'systems/bite-the-bullet/assets/icons/weapon-default.svg', description: 'A small blade, easily concealed.' },
+        { name: 'Long knife', damage: '1d6', shots: 0, range: 'personal', props: { melee: true }, img: 'systems/bite-the-bullet/assets/icons/weapon-default.svg', description: 'Heavier blade for close-in work.' },
+        { name: 'Saber', damage: '1d6', shots: 0, range: 'personal', props: { melee: true }, img: 'systems/bite-the-bullet/assets/icons/weapon-default.svg', description: 'A gentleman’s sword; may find use in social conflict.' },
+        { name: 'Tomahawk', damage: '1d6', shots: 0, range: 'personal', props: { melee: true, throwable: true }, img: 'systems/bite-the-bullet/assets/icons/weapon-default.svg', description: 'Light axe, can be thrown (Close).' },
+        { name: 'Bullwhip', damage: '1d4', shots: 0, range: 'close', props: { }, img: 'systems/bite-the-bullet/assets/icons/weapon-default.svg', description: 'Entangle or disarm. Narratively impair on a hit.' },
+        { name: 'Bow & arrows', damage: '1d6', shots: 6, range: 'close', props: { silent: true }, img: 'systems/bite-the-bullet/assets/icons/weapon-default.svg', description: 'Silent and deadly with steady hands.' }
       ];
       for (const w of items) {
         if (existing.has(w.name)) continue;
@@ -357,9 +439,9 @@ Hooks.once('ready', async function() {
       const existing = new Set(docs.map(d => d.name));
       const items = [
         { name: 'Duster coat', value: 1, img: 'icons/equipment/chest/coat-leather-brown.webp', description: 'Long coat that turns the wind and a little lead.' },
-        { name: 'Rancher\'s vest', value: 2, img: 'icons/equipment/chest/vest-leather-brown.webp', description: 'Sturdy vest; better than nothing in a shootout.' },
-        { name: 'Railhand plate', value: 2, img: 'icons/equipment/chest/breastplate-scale-steel.webp', description: 'Scrap metal armor, heavy but protective.' },
-        { name: 'Scavver leathers', value: 1, img: 'icons/equipment/chest/breastplate-leather-studded-brown.webp', description: 'Pieced leathers for the wastelands.' }
+        { name: 'Rancher\'s vest', value: 2, img: 'systems/bite-the-bullet/assets/icons/armor-default.svg', description: 'Sturdy vest; better than nothing in a shootout.' },
+        { name: 'Railhand plate', value: 2, img: 'systems/bite-the-bullet/assets/icons/armor-default.svg', description: 'Scrap metal armor, heavy but protective.' },
+        { name: 'Scavver leathers', value: 1, img: 'systems/bite-the-bullet/assets/icons/armor-default.svg', description: 'Pieced leathers for the wastelands.' }
       ];
       for (const a of items) {
         if (existing.has(a.name)) continue;
