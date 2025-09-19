@@ -61,6 +61,13 @@
       "path": "packs/starter-gear.db",
       "type": "Item",
       "system": "bite-the-bullet"
+    },
+    {
+      "name": "tables",
+      "label": "Bite the Bullet — Tables",
+      "path": "packs/tables.db",
+      "type": "RollTable",
+      "system": "bite-the-bullet"
     }
   ],
   "license": "LICENSE.txt",

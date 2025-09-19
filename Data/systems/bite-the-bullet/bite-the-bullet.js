@@ -21,6 +21,19 @@
             <li>Generate authentic Wild West name</li>
           </ul>
           <p><em>Note: This will create a new actor or overwrite an existing one.</em></p>
+
+          <hr/>
+          <p><strong>One-Click Table Rolls</strong></p>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+            <button type="button" onclick="game.bitebullet.rollRulesTable('Background (d10)')">Roll Background</button>
+            <button type="button" onclick="game.bitebullet.rollRulesTable('Reputation (d10)')">Roll Reputation</button>
+            <button type="button" onclick="game.bitebullet.rollRulesTable('Fortitude (d10)')">Roll Fortitude</button>
+            <button type="button" onclick="game.bitebullet.rollRulesTable('Foible (d10)')">Roll Foible</button>
+            <button type="button" onclick="game.bitebullet.rollRulesTable('Issue (d10)')">Roll Issue</button>
+            <button type="button" onclick="game.bitebullet.rollRulesTable('Armor (d5)')">Roll Armor</button>
+            <button type="button" onclick="game.bitebullet.rollRulesTable('Weapons (d8)')">Roll Weapon</button>
+            <button type="button" onclick="game.bitebullet.rollRulesTable('Gear (d20)')">Roll Gear</button>
+          </div>
         </div>`;
       new Dialog({
         title: 'Character Generator',
@@ -95,6 +108,51 @@
         default: 'import'
       }).render(true);
       // Do not call super.render to avoid template resolution; this menu only shows a Dialog
+      return this;
+    }
+  }
+
+  // Settings menu: Clone Tables to World
+  class CloneTablesMenu extends FormApplication {
+    static get defaultOptions() {
+      return foundry.utils.mergeObject(super.defaultOptions, {
+        title: 'Tables Tools',
+        id: 'bite-bullet-clone-tables',
+        width: 420,
+        height: 'auto'
+      });
+    }
+    async render(force, options) {
+      const content = `
+        <div style="padding: 8px;">
+          <p><strong>Clone Tables to World</strong></p>
+          <p>Clones all Rollable Tables from the system compendium <em>Bite the Bullet — Tables</em> into your World.</p>
+          <ul>
+            <li>Overwrites World tables with the same name.</li>
+            <li>Requires GM permissions.</li>
+          </ul>
+        </div>`;
+      new Dialog({
+        title: 'Tables: Clone to World',
+        content,
+        buttons: {
+          clone: {
+            label: 'Clone Now',
+            callback: async () => {
+              if (!game.user.isGM) return ui.notifications.warn('GM only');
+              await game.bitebullet.cloneTablesToWorld();
+            }
+          },
+          macro: {
+            label: 'Create Hotbar Macro',
+            callback: async () => {
+              if (!game.user.isGM) return ui.notifications.warn('GM only');
+              await game.bitebullet.createCloneTablesMacro();
+            }
+          }
+        },
+        default: 'clone'
+      }).render(true);
       return this;
     }
   }
@@ -212,6 +270,16 @@ Hooks.once('init', async function() {
     hint: game.i18n.localize('IMPORT.MenuHint'),
     icon: 'fas fa-download',
     type: ImportStartersMenu,
+    restricted: true
+  });
+
+  // Settings menu: Tables clone (register within init)
+  game.settings.registerMenu('bite-the-bullet', 'cloneTablesMenu', {
+    name: 'Tables Tools',
+    label: 'Tables: Clone to World',
+    hint: 'Clone system Rollable Tables compendium into the World (GM only)',
+    icon: 'fas fa-table',
+    type: CloneTablesMenu,
     restricted: true
   });
 
@@ -351,6 +419,53 @@ Hooks.once('init', async function() {
       }
       return macro;
     },
+    // Clone RollTable compendium to World (overwrites by name)
+    cloneTablesToWorld: async () => {
+      if (!game.user.isGM) return ui.notifications.warn('GM only');
+      const pack = game.packs.get('bite-the-bullet.tables');
+      if (!pack) return ui.notifications.error('System tables compendium not found.');
+      const docs = await pack.getDocuments();
+      let cloned = 0;
+      for (const tbl of docs) {
+        // Delete any world table with same name
+        const existing = game.tables.getName(tbl.name);
+        if (existing) {
+          try { await existing.delete(); } catch (e) { /* ignore */ }
+        }
+        const data = tbl.toObject();
+        delete data._id;
+        await RollTable.create(data);
+        cloned += 1;
+      }
+      ui.notifications.info(`Cloned ${cloned} tables into the World.`);
+    },
+    // Macro to run cloneTablesToWorld
+    createCloneTablesMacro: async () => {
+      if (!game.user.isGM) return ui.notifications.warn('GM only');
+      const name = 'Clone Tables to World';
+      const command = "game.bitebullet.cloneTablesToWorld();";
+      let macro = game.macros?.getName?.(name);
+      if (!macro) {
+        macro = await Macro.create({
+          name,
+          type: 'script',
+          scope: 'global',
+          img: 'systems/bite-the-bullet/assets/icons/table.svg',
+          command
+        }, { displaySheet: false });
+      }
+      // Place on first empty hotbar slot
+      let slot = null;
+      const hb = game.user?.hotbar || {};
+      for (let i = 1; i <= 50; i++) { if (!hb[i]) { slot = i; break; } }
+      if (slot) {
+        await game.user.assignHotbarMacro(macro, slot);
+        ui.notifications.info(`Macro placed on hotbar slot ${slot}.`);
+      } else {
+        ui.notifications.info('Macro created. No empty hotbar slot found.');
+      }
+      return macro;
+    },
     getSpecialItemUuids: () => {
       try {
         const raw = game.settings.get('bite-the-bullet', 'specialItemUuids');
@@ -360,6 +475,38 @@ Hooks.once('init', async function() {
       }
     },
     getUiPrefs: () => ({ showAoePerTarget: game.settings.get('bite-the-bullet', 'showAoePerTarget') }),
+    // Roll a named rules table from World or the system compendium and post to chat
+    rollRulesTable: async (tableName) => {
+      try {
+        // Prefer World table
+        let table = game.tables?.getName?.(tableName) || null;
+        // Otherwise pull from compendium
+        if (!table) {
+          const pack = game.packs.get('bite-the-bullet.tables');
+          if (pack) {
+            const docs = await pack.getDocuments();
+            table = docs.find(d => d.name === tableName) || null;
+          }
+        }
+        if (!table) {
+          return ui.notifications.warn(`Table not found: ${tableName}`);
+        }
+        const draw = await table.draw();
+        const resultTexts = (draw.results || []).map(r => r.text).filter(Boolean);
+        const result = resultTexts.join('<br>');
+        const rollTotal = draw.roll?.total ?? '';
+        const content = `
+          <div class="bitebullet-chat-table">
+            <div><strong>${table.name}</strong> ${table.formula ? `(${table.formula})` : ''} ${rollTotal !== '' ? `→ <em>${rollTotal}</em>` : ''}</div>
+            <div>${result || '(no result)'}</div>
+          </div>`;
+        await ChatMessage.create({ content, speaker: ChatMessage.getSpeaker() });
+        return { draw, resultTexts };
+      } catch (e) {
+        console.error('Bite the Bullet: rollRulesTable failed', e);
+        ui.notifications.error('Failed to roll table. See console for details.');
+      }
+    },
     
     // Character Generator functions
     generateNewCharacter: async () => {
@@ -735,6 +882,252 @@ Hooks.once('ready', async function() {
         }
         if (imported) uuidsMap[imported.name] = imported.uuid;
       }
+    }
+
+    // Populate Rollable Tables pack with core rules tables (only once per world)
+    const packTables = game.packs.get('bite-the-bullet.tables');
+    if (packTables && !packTables.locked) {
+      const existingDocs = await packTables.getDocuments();
+      const existingMap = new Map(existingDocs.map(t => [t.name, t]));
+      const makeTableData = (name, dieFaces, results, description = '') => {
+        const res = results.map((text, i) => ({
+          type: 0, // TEXT
+          text,
+          img: 'icons/svg/d20-black.svg',
+          weight: 1,
+          range: [i + 1, i + 1],
+          drawn: false
+        }));
+        return {
+          name,
+          description,
+          replacement: true,
+          displayRoll: true,
+          formula: `1d${dieFaces}`,
+          results: res
+        };
+      };
+      const ensureTable = async (name, dieFaces, results, description = '') => {
+        // If exists, delete and recreate to keep content in sync
+        const existing = existingMap.get(name);
+        if (existing) {
+          try { await packTables.deleteDocument(existing.id); } catch (e) { /* ignore */ }
+        }
+        const data = makeTableData(name, dieFaces, results, description);
+        const doc = new RollTable(data);
+        await packTables.importDocument(doc);
+      };
+
+      // d10 Background
+      await ensureTable('Background (d10)', 10, [
+        '1 Mine-born. You grew up underground. Tough as bedrock and wary of collapse.',
+        '2 Drifter. Always on the move. You read people and places before they read you.',
+        '3 Ex-preacher. You speak in parables, your eyes heavy with judgment.',
+        '4 Scout. You know where to walk, what to track, and when to vanish.',
+        '5 Homesteader. You know how to fix things yourself. Stubborn, frugal, and proud.',
+        '6 Sharpshooter. Trained to breathe steadily and end things at a distance.',
+        '7 Dustmarshal’s whelp. Raised among the law, but the law don’t raise saints.',
+        '8 Salt flat smuggler. You’ve run contraband past bandits and a whole lot worse.',
+        '9 Gun pit fighter. You know exactly what a man looks like right before he breaks.',
+        '10 Rustwalker. You scavenge ruins without flinching at the bones.'
+      ]);
+
+      // d10 Reputation
+      await ensureTable('Reputation (d10)', 10, [
+        '1 Shot Wyatt at sundown. True or not, folks believe it.',
+        '2 Hex-touched. People whisper you got bad blood or stranger gifts.',
+        '3 Burned a town down. Everyone\'s got an opinion on what really happened.',
+        '4 Old hand. Seen as seasoned, maybe too seasoned.',
+        '5 Cold-eyed killer. Your stare alone chills most men.',
+        '6 Broken man. They say you’ve lost everything, and it shows.',
+        '7 Witch’s favor. Rumor has it that something inhuman watches over you.',
+        '8 Last of the line. Your name still carries weight…or warning.',
+        '9 Silver-tongued devil. You can talk most into deals they’ll regret.',
+        '10 Died once. They say you were buried. You say nothing.'
+      ]);
+
+      // d10 Fortitude
+      await ensureTable('Fortitude (d10)', 10, [
+        '1 Justice above all. Fair or foul, you won’t let wrong stand.',
+        '2 The old ways. You heed traditions carved in stone or bone.',
+        '3 Blood oath. Loyalty to kin, clan, or cause overrides fear.',
+        '4 Grace under fire. Calm ain’t a tactic—it’s your only way through.',
+        '5 Work is worth. You believe effort should earn its due.',
+        '6 Don’t look back. The past is dead. Forward’s all that matters.',
+        '7 Protect the weak. You can’t abide cruelty, even when it’s easy.',
+        '8 Owe a debt. Something big keeps your hand steady and your head low.',
+        '9 Survive, always. Survival isn’t luck, it’s will sharpened by fire.',
+        '10 Faith in something. Maybe God, maybe it’s just the Sun. But it keeps you walking.'
+      ]);
+
+      // d10 Foible
+      await ensureTable('Foible (d10)', 10, [
+        '1 Short fuse. You burn hot, fast, and loud.',
+        '2 Drinks to forget. You self-medicate with every bottle, every night.',
+        '3 Can’t let go. You obsess over the thing you lost...or caused.',
+        '4 Bleeds for strangers. You help even when it hurts.',
+        '5 Never backs down. Pride is your shield, even when it cracks.',
+        '6 Haunted by dreams. You’ve seen things you wish you hadn’t.',
+        '7 Reckless hope. You expect good in places it don’t belong.',
+        '8 Always watching. You trust no one, not even yourself.',
+        '9 Compulsive fixer. You can’t leave broken things alone.',
+        '10 Vow of silence. You don’t speak unless it\'s carved in fire.'
+      ]);
+
+      // d10 Issue
+      await ensureTable('Issue (d10)', 10, [
+        '1 Craves meaning. You can’t stand the thought that it’s all for nothing.',
+        '2 Seeks the one who left. Someone walked out. You’re still chasing.',
+        '3 Faith in fire. You believe only destruction cleanses.',
+        '4 Tainted by the past. Something you did or were part of won’t stay buried.',
+        '5 The thing beneath. You dream of tunnels. You wake cold.',
+        '6 Marked by prophecy. You’ve read your fate. You’re making it real.',
+        '7 Addicted to risk. The edge calls louder than any reward.',
+        '8 Owes a devil’s favor. You took help you shouldn’t have. It’s still watching.',
+        '9 Seeks an end. Some part of you walks toward death, always.',
+        '10 Afraid to love again. You keep everyone at the far end of your reach.'
+      ]);
+
+      // d5 Armor
+      await ensureTable('Armor (d5)', 5, [
+        '1 Duster coat | Armor Slots: 1 | Worn leather, oil-waxed for trail grit. Light but better than nothing.',
+        '2 Rancher’s vest | Armor Slots: 2 | Thick quilted leather layered with scraps of metal or bone. Uncomfortable but sturdy.',
+        '3 Railhand plate | Armor Slots: 2 | Salvaged breastplate from a collapsed ironclad engine. Heavy and clumsy, but solid.',
+        '4 Scavver leathers | Armor Slots: 1 | Patchwork hides, reinforced with wire mesh and thick canvas. Worn by dust-pickers.',
+        '5 Bone-ward fetish | Armor Slots: 0 | No protection to speak of, but hung with charms, bones, or glyphs. May ward off fear or stranger things. Could be armor for Faith-based conflict.'
+      ]);
+
+      // d8 Weapons
+      await ensureTable('Weapons (d8)', 8, [
+        '1 Revolver | Damage: d6 | Slots: 1 | Range: Close | Traits: 6 shots',
+        '2 Lever-action rifle | Damage: d6 | Slots: 2 | Range: Medium | Traits: 5 shots',
+        '3 Coach gun | Damage: d6 | Slots: 2 | Range: Close | Traits: AoE, 2 shots, hits all in zone (allies too)',
+        '4 Knife/long knife | Damage: d4/d6 | Slots: 1 | Range: Personal | Traits: Concealable, melee only',
+        '5 Saber | Damage: d6 | Slots: 1 | Range: Personal | Traits: May be used for social conflict',
+        '6 Tomahawk | Damage: d6 | Slots: 1 | Range: Personal | Traits: Melee, throwable (Close)',
+        '7 Bullwhip | Damage: d4 | Slots: 1 | Range: Close | Traits: No melee, may impair target on hit',
+        '8 Bow & arrows | Damage: d6 | Slots: 2 | Range: Close | Traits: Silent, 6 shots'
+      ]);
+
+      // d20 Gear
+      await ensureTable('Gear (d20)', 20, [
+        '1 Tinderbox – Flint, steel, and dry scrap tucked in a tin. 1 slot.',
+        '2 Canteen – Half-full. The water’s clean. For now. 1 slot.',
+        '3 Bundle of jerky – String-tied meat: probably goat, possibly not. 1 slot.',
+        '4 Whetstone – Keeps blades sharp and minds steady.',
+        '5 Traveler’s Bible – Pages marked in charcoal and blood. Can be used to assist with Social or faith-based conflict. 1 slot.',
+        '6 Coil of wire – Thin but strong. 10 feet, barbed in spots. 1 slot.',
+        '7 Harmonica – Dented, off-tune, but it carries memory. Can be used to assist with Social or faith-based conflict.',
+        '8 Wooden idol – Small and worn smooth. You don’t remember who carved it. Can be used to assist with Social or faith-based conflict.',
+        '9 Notebook & charcoal stub – Half-filled with symbols, maps, names. Some aren’t yours. 1 slot.',
+        '10 Spool of thread & needle – For stitching gear or yourself. It may hold more than it should. 1 slot.',
+        '11 Bottle of whiskey – Three good swigs left. Used for courage or cleaning wounds. 1 slot.',
+        '12 Bear trap – Folded and rusted. Still snaps like judgment. Bulky, 2 slots (d12 ambush damage; Vigor Save for d6).',
+        '13 Hand mirror – Cracked across the middle. Sometimes shows things behind you. 1 slot.',
+        '14 Tin cup – Dented and burned. Always warm when you wake.',
+        '15 Lockbox (empty) – Heavy, padlocked, and no key in sight. Why’d you keep it? 2 slots.',
+        '16 Rope (20 ft.) – Rough, stiff hemp. Smells of boats or gallows. 1 slot.',
+        '17 Signal whistle – Loud, shrill, from another time. Draws dogs and worse.',
+        '18 Fashionable top hat – Doesn’t fit quite right. 1 slot.',
+        '19 Old coin – Face is scratched off. Warm to the touch.',
+        '20 Goggles – Dust-scratched lenses and a cracked leather strap. Might keep the wind out. Might not. 1 slot.'
+      ]);
+
+      // d12 Physical burden
+      await ensureTable('Physical burden (d12)', 12, [
+        '1 Bruised: Roll 2d6. If greater than max Sand, take the new result.',
+        '2 Winded: Lose this round, or the next if you’ve already acted. Roll 3d (drop lowest). If greater than max Sand, take the new result.',
+        '3 Battered: Add Deprived to your Inventory (1 slot). You can’t regain Sand until it’s removed. After a long rest, roll 2d6. If greater than max Vigor, take the new result.',
+        '4 Marked: You’ve taken a visible scar. Replace a characteristic with Scarred (1). If you already have that, raise its rank by 1.',
+        '5 Bloodied: Add Bloodied to your Inventory (1 slot). Social tests are taken at –1. After a long rest, remove Bloodied and the penalty.',
+        '6 Hobbled: Your footing is unsteady. Vigor tests are at disadvantage until the end of the fight. Roll 3d6 (drop highest). If greater than max Sand, take the new result.',
+        '7 Concussed: A hard blow rattles your brain. Lose this round, or the next if you’ve already acted. Add Concussed to your Inventory (1 slot). Faith tests are at disadvantage until healed by a long rest.',
+        '8 Broken: Take a fall and break something. Lose 1d4 Vigor. Once mended, roll 3d6 (drop lowest). If greater than max Vigor, take the new result.',
+        '9 Clobbered: A hard blow causes you to lose 1d4 Vigor. Once mended, roll 3d6 (drop lowest). If greater than max Vigor, take the new result.',
+        '10 Bleeding: Add Bleeding to your Inventory (1 slot). You can’t regain Sand until healed. Lose 1d4 Vigor per day. Once healed, roll 3d6. If greater than Vigor, it is your new score.',
+        '11 Lamed: Add Lamed to your Inventory (2 slots). Movement is halved and this can’t be removed without doctoring and extended rest. Once healed, roll 3d6. If greater than Vigor, it is your new score.',
+        '12 Endangered: This could be the end. If you fail your next Vigor Save, you die. If you succeed, replace a characteristic with Unkillable (2). If you already have that, raise its rank by 1.'
+      ]);
+
+      // d12 Social burden
+      await ensureTable('Social burden (d12)', 12, [
+        '1 Bruised ego: Roll 2d6. If greater than max Sand, take the new result.',
+        '2 Tongue-tied: Lose this round, or the next if you’ve already acted. Roll 3d6 (drop lowest). If greater than max Sand, take the new result.',
+        '3 Shamed: Add Shamed to your Inventory (1 slot). Your next Presence test is at disadvantage. After that test, remove Shamed.',
+        '4 Cornered: Your rhetoric has been shifted into a corner. Your next Presence attack is at disadvantage. After this conflict, roll 3d6 (drop highest). If higher than max Presence, it is your new score.',
+        '5 Exposed: Add Exposed to your Inventory (1 slot). Subtract 1d6 from your Presence until the end of the session. After a long rest, roll 3d (drop highest). If greater than max Sand, take the new result.',
+        '6 Rumor-stained: Lose 1d4 Presence. After a long rest, roll 3d6 (drop lowest). If greater than max Presence, take the new result.',
+        '7 Embarrassed: You’ve been disclaimed! Add that to your Inventory (slot). Presence tests are at disadvantage until rectified by a long rest.',
+        '8 Exposed: You’ve been exposed as speaking with a forked tongue. Lose 1d4 Presence. After a long rest, roll 3d6 (drop lowest). If greater than max Presence, take the new result.',
+        '9 Branded: Named as a coward. Add Branded to your Inventory (1 slot). You act last in any social conflict until fixed. After that, roll 3d6. If greater than max Presence, take the new result.',
+        '10 Outmaneuvered: You’ve lost this argument. Add Foiled to your Inventory (1 slot). Lose 1d4 Presence per day. Once healed, roll 3d6. If the result is higher than your Presence, it is your new score.',
+        '11 Ostracized: Add Ostracized to you Inventory (2 slots). Social Saves are at disadvantage. Once removed, roll 3d6. If the result is higher than your Presence, it is your new score.',
+        '12 Shunned: If you fail your next Presence Save, your status has banished you from play. If you succeed, replace a characteristic with Return of the Mack (2). If you already have that, increase its rank by 1.'
+      ]);
+
+      // d12 Faith burden
+      await ensureTable('Faith burden (d12)', 12, [
+        '1 Bruised faith: Roll 2d6. If greater than max Sand, take the new result.',
+        '2 Rattled: Lose this round, or the next if you’ve already acted. Roll 2d6. If greater than max Sand, take the new result.',
+        '3 Shaken creed: Add Shaken to your Inventory (1 slot).Your next Faith test is at disadvantage. After that test, remove Shaken.',
+        '4 Profaned: Add Profaned to your Inventory (1 slot). You cannot regain Sand while it is there. After a long rest, roll 3d6 (drop highest) and replace your Faith with this number if it is higher.',
+        '5 Blasphemed: Add Blasphemed to your Inventory (2 slots). All Faith tests at disadvantage until removed. After a long rest, roll 3d6. If greater than Faith, take the new result and remove Blasphemed.',
+        '6 Unmoored: Lose 1d4 Faith. Quest to regain your Faith and roll 3d (drop lowest). If it is higher than your current Faith, replace it.',
+        '7 Lapsed: You are stunned for two actions as you question yourself. Vigor tests are at disadvantage until you take a long rest.',
+        '8 Forsaken: Replace one of your characteristics with Forsaken (1). All Faith-based acts are at disadvantage with Forsaken.',
+        '9 Broken vow: You have broken a vow. Lose 1d6 Presence. This cannot be healed until the vow has been reaffirmed by Faith.',
+        '10 Oathless: Add Oathless to your Inventory (1 slot). Until rectified, you cannot do Acts of Faith and lose 1d4 Faith per day. Once healed, roll 3d6. If the result is higher than your Faith, it is your new score.',
+        '11 Excommunicated: Add Excommunicated to your Inventory (2 slots). All Presence Saves are at disadvantage. This can only be removed with a major restitution. Once rectified, roll 3d6. If the result is higher than your Faith, it is your new score.',
+        '12 Apostate: If you fail your next Faith Save, you are self-banished and removed from play. If you succeed, replace one characteristic with Unshakeable (2). If you already have it, raise its rank by 1.'
+      ]);
+
+      // d4 Bond type
+      await ensureTable('Bond type (d4)', 4, [
+        '1 The Pact. The band is bound by oath, vengeance, or common survival.',
+        '2 The Ledger. Debts and favors bind you together.',
+        '3 The Iron Brand. A shared mark, name, faith, or identity.',
+        '4 The Shared Burden. A common weight you all carry is lighter than one carried alone.'
+      ]);
+
+      // d6 Pact bond
+      await ensureTable('Pact bond (d6)', 6, [
+        '1 Sworn to avenge a town that was burned to ashes.',
+        '2 Bound to track down the same outlaw.',
+        '3 Promised to guard a bloodline or heirloom.',
+        '4 Agreed to ride until all debts are paid.',
+        '5 Survive together or not at all.',
+        '6 Keep moving West, no matter the cost.'
+      ]);
+
+      // d6 Ledger bond
+      await ensureTable('Ledger bond (d6)', 6, [
+        '1 One of you saved another’s life in a dust storm.',
+        '2 Owes coin from a gamble gone bad.',
+        '3 Helped bury each other’s dead.',
+        '4 Covered for each other after a killing.',
+        '5 Pulled each other out of the same collapse.',
+        '6 Kept one another’s secrets when it mattered.'
+      ]);
+
+      // d6 Iron brand bond
+      await ensureTable('Iron brand bond (d6)', 6, [
+        '1 One of you saved another’s life in a dust storm.',
+        '2 Owes coin from a gamble gone bad.',
+        '3 Helped bury each other’s dead.',
+        '4 Covered for each other after a killing.',
+        '5 Pulled each other out of the same collapse.',
+        '6 Kept one another’s secrets when it mattered.'
+      ]);
+
+      // d6 Shared burden bond
+      await ensureTable('Shared burden bond (d6)', 6, [
+        '1 Hunted by the same bounty-poster.',
+        '2 Blamed for the same blood feud.',
+        '3 Carrying the same cursed item or debt.',
+        '4 Escaped together from the same camp or from the gallows.',
+        '5 Lost kin in the same raid.',
+        '6 Witnessed the same horror and can’t speak of it.'
+      ]);
     }
 
     // Persist UUID map setting
