@@ -2,7 +2,7 @@
   "id": "bite-the-bullet",
   "title": "Bite the Bullet",
   "description": "A Foundry VTT system for the Bite the Bullet RPG - a post-apocalyptic Western where faith, grit, and gunpowder meet in the wasteland.",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "compatibility": {
     "minimum": "13",
     "verified": "13"
