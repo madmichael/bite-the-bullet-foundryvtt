@@ -18,6 +18,7 @@
             <li>Roll characteristics from tables</li>
             <li>Generate starting equipment</li>
             <li>Calculate inventory and resources</li>
+            <li>Generate authentic Wild West name</li>
           </ul>
           <p><em>Note: This will create a new actor or overwrite an existing one.</em></p>
         </div>`;
@@ -38,6 +39,14 @@
             callback: async () => {
               if (game?.bitebullet?.regenerateExistingCharacter) {
                 await game.bitebullet.regenerateExistingCharacter();
+              }
+            }
+          },
+          nameOnly: {
+            label: 'Generate Name Only',
+            callback: async () => {
+              if (game?.bitebullet?.generateNameDialog) {
+                await game.bitebullet.generateNameDialog();
               }
             }
           }
@@ -105,6 +114,7 @@ import { performActOfFaith } from "./module/helpers/faith.js";
 import { rollPhysicalDamage, rollSocialDamage } from "./module/helpers/conflict.js";
 import { applyBurden } from "./module/helpers/burdens.js";
 import { generateCharacter, applyCharacterToActor } from "./module/helpers/character-generator.js";
+import { generateWildWestName } from "./module/helpers/name-generator.js";
 import { BITE_BULLET } from "./module/helpers/config.js";
 import { preloadHandlebarsTemplates } from "./module/helpers/templates.js";
 
@@ -215,6 +225,7 @@ Hooks.once('init', async function() {
     rollPhysicalDamage,
     rollSocialDamage,
     applyBurden,
+    generateWildWestName,
     // Utility to import starter items from compendia into the world Item directory
     importStarterItemsToWorld: async () => {
       if (!game.user.isGM) return ui.notifications.warn(game.i18n.localize('IMPORT.GMOnly'));
@@ -356,9 +367,12 @@ Hooks.once('init', async function() {
         // Generate character data
         const characterData = generateCharacter();
         
+        // Generate name
+        const nameData = generateWildWestName();
+        
         // Create new actor
         const actor = await Actor.create({
-          name: 'Generated Character',
+          name: nameData.fullName,
           type: 'character',
           img: 'icons/svg/mystery-man.svg'
         });
@@ -448,6 +462,66 @@ Hooks.once('init', async function() {
           }
         },
         default: 'regenerate'
+      }).render(true);
+    },
+    
+    generateNameDialog: async () => {
+      // Generate multiple name options
+      const maleNames = [];
+      const femaleNames = [];
+      
+      for (let i = 0; i < 3; i++) {
+        maleNames.push(generateWildWestName('male'));
+        femaleNames.push(generateWildWestName('female'));
+      }
+      
+      const template = `
+        <div style="padding: 8px;">
+          <p><strong>Wild West Name Generator</strong></p>
+          <p>Choose a name or generate new ones:</p>
+          
+          <h4>Male Names:</h4>
+          <div style="margin-bottom: 15px;">
+            ${maleNames.map((name, i) => `
+              <div style="margin: 5px 0; padding: 8px; background: rgba(139, 69, 19, 0.1); border-radius: 4px;">
+                <strong>${name.fullName}</strong><br>
+                <small style="color: #666;">${name.firstName} • ${name.nickname} • ${name.lastName}</small>
+              </div>
+            `).join('')}
+          </div>
+          
+          <h4>Female Names:</h4>
+          <div style="margin-bottom: 15px;">
+            ${femaleNames.map((name, i) => `
+              <div style="margin: 5px 0; padding: 8px; background: rgba(139, 69, 19, 0.1); border-radius: 4px;">
+                <strong>${name.fullName}</strong><br>
+                <small style="color: #666;">${name.firstName} • ${name.nickname} • ${name.lastName}</small>
+              </div>
+            `).join('')}
+          </div>
+          
+          <p><em>Click "Generate More" for new names, or close this dialog.</em></p>
+        </div>
+      `;
+      
+      new Dialog({
+        title: 'Wild West Name Generator',
+        content: template,
+        buttons: {
+          generateMore: {
+            label: 'Generate More Names',
+            callback: async () => {
+              // Recursively call to generate new names
+              if (game?.bitebullet?.generateNameDialog) {
+                await game.bitebullet.generateNameDialog();
+              }
+            }
+          },
+          close: {
+            label: 'Close'
+          }
+        },
+        default: 'generateMore'
       }).render(true);
     }
   };

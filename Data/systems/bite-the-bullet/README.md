@@ -15,7 +15,7 @@ A game system for Foundry VTT supporting the "Bite the Bullet" RPG by Jason Hobb
 
 If hosting the system files, you can install via the Foundry VTT system installer using this manifest URL:
 ```
-[Your manifest URL here]
+https://madmichael.github.io/bite-the-bullet-foundryvtt/system.json
 ```
 
 ## Directory Structure

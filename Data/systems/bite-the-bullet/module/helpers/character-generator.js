@@ -264,6 +264,7 @@ export async function applyCharacterToActor(actor, characterData) {
       damage: characterData.equipment.weapon.damage,
       range: characterData.equipment.weapon.range,
       shots: characterData.equipment.weapon.shots,
+      currentShots: characterData.equipment.weapon.shots, // Start fully loaded
       properties: characterData.equipment.weapon.properties,
       description: characterData.equipment.weapon.traits
     }

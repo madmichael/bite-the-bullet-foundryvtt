@@ -30,13 +30,32 @@ export async function rollPhysicalDamage({
   isGun = false,
   tapBonus = 0,
   tappedChar = null,
-  aoe = false
+  aoe = false,
+  weapon = null
 } = {}) {
   const t = game.i18n.localize.bind(game.i18n);
   const formula = chooseDamageFormula(baseFormula, { advantage, disadvantage });
   const roll = new Roll(formula);
   await roll.evaluate();
   let dmgTotal = roll.total + tapBonus;
+
+  // Consume ammunition if weapon uses shots
+  let ammoStatus = '';
+  if (weapon && weapon.system.shots > 0) {
+    const currentShots = weapon.system.currentShots || 0;
+    if (currentShots <= 0) {
+      ui.notifications.warn(`${weapon.name} is out of ammunition!`);
+      return null; // Prevent attack if no ammo
+    }
+    
+    const newShots = currentShots - 1;
+    await weapon.update({ 'system.currentShots': newShots });
+    ammoStatus = `<p><em>${weapon.name}: ${newShots}/${weapon.system.shots} shots remaining</em></p>`;
+    
+    if (newShots === 0) {
+      ui.notifications.warn(`${weapon.name} is now empty - reload needed!`);
+    }
+  }
 
   // Basic armor mitigation if present on target
   let mitigated = dmgTotal;
@@ -89,6 +108,7 @@ export async function rollPhysicalDamage({
       ${affected.length && affected.length <= 5 && showPerTarget ? `<div class="per-target">${perTarget.map(pt => `<div>• ${pt.name}: ${t('CHAT.AppliedToSand')} ${pt.applied}${pt.overflow ? `, ${t('CHAT.OverflowToVigor')} ${pt.overflow}` : ''}</div>`).join('')}</div>` : ''}
       ${aoe && affected.length > 1 ? `<div class="aoe-note"><em>${t('CHAT.AoeNoteFriendly')}</em></div>` : ''}
       ${triggeredBurden ? `<div class="burden-note"><em>Burden triggered (Physical).</em></div>` : ''}
+      ${ammoStatus}
     </div>
   `;
   return ChatMessage.create({

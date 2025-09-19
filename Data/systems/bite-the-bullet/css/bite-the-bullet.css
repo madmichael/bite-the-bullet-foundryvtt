@@ -474,6 +474,183 @@
   :root.bitebullet-theme-dark .bite-bullet .inventory-section h3 .item-create:hover {
     background: #ffd08a !important;
   }
+
+  /* ===== CHAT MESSAGE TEXT FIXES ===== */
+  /* Make ALL text readable on light backgrounds - comprehensive fix */
+  .bite-bullet.tap-result,
+  .bite-bullet.rank-advancement,
+  .bite-bullet.save-roll,
+  .bite-bullet.damage-roll,
+  .bite-bullet.reload-result,
+  .bite-bullet.tap-result *,
+  .bite-bullet.rank-advancement *,
+  .bite-bullet.save-roll *,
+  .bite-bullet.damage-roll *,
+  .bite-bullet.reload-result *,
+  .bite-bullet.tap-result div,
+  .bite-bullet.rank-advancement div,
+  .bite-bullet.save-roll div,
+  .bite-bullet.damage-roll div,
+  .bite-bullet.reload-result div,
+  .bite-bullet.tap-result p,
+  .bite-bullet.rank-advancement p,
+  .bite-bullet.save-roll p,
+  .bite-bullet.damage-roll p,
+  .bite-bullet.reload-result p,
+  .bite-bullet.tap-result span,
+  .bite-bullet.rank-advancement span,
+  .bite-bullet.save-roll span,
+  .bite-bullet.damage-roll span,
+  .bite-bullet.reload-result span,
+  .bite-bullet.tap-result em,
+  .bite-bullet.rank-advancement em,
+  .bite-bullet.save-roll em,
+  .bite-bullet.damage-roll em,
+  .bite-bullet.reload-result em {
+    color: #2c2c2c !important;
+  }
+
+  /* Headers and important elements get brown color */
+  .bite-bullet.tap-result h3,
+  .bite-bullet.rank-advancement h3,
+  .bite-bullet.save-roll h3,
+  .bite-bullet.damage-roll h3,
+  .bite-bullet.reload-result h3,
+  .bite-bullet.tap-result strong,
+  .bite-bullet.rank-advancement strong,
+  .bite-bullet.save-roll strong,
+  .bite-bullet.damage-roll strong,
+  .bite-bullet.reload-result strong,
+  .bite-bullet.tap-result .damage,
+  .bite-bullet.rank-advancement .damage,
+  .bite-bullet.save-roll .damage,
+  .bite-bullet.damage-roll .damage,
+  .bite-bullet.reload-result .damage {
+    color: #8b4513 !important;
+  }
+
+  /* Ensure all text within bite-bullet chat messages is dark on light theme */
+  .chat-log.theme-light .bite-bullet,
+  .chat-log.theme-light .bite-bullet *,
+  .chat-log.theme-light .bite-bullet div,
+  .chat-log.theme-light .bite-bullet p,
+  .chat-log.theme-light .bite-bullet span {
+    color: #2c2c2c !important;
+  }
+
+  /* Headers and important elements get brown color */
+  .chat-log.theme-light .bite-bullet h3,
+  .chat-log.theme-light .bite-bullet .damage,
+  .chat-log.theme-light .bite-bullet strong {
+    color: #8b4513 !important;
+  }
+
+  /* Success/failure states */
+  .chat-log.theme-light .bite-bullet .success {
+    color: #2d5016 !important;
+  }
+
+  .chat-log.theme-light .bite-bullet .failure {
+    color: #8b0000 !important;
+  }
+
+  /* ===== COMPREHENSIVE DARK THEME CHAT FIXES ===== */
+  /* Dark theme chat messages - ensure all text is light colored */
+  :root.bitebullet-theme-dark .bite-bullet.tap-result,
+  :root.bitebullet-theme-dark .bite-bullet.rank-advancement,
+  :root.bitebullet-theme-dark .bite-bullet.save-roll,
+  :root.bitebullet-theme-dark .bite-bullet.damage-roll,
+  :root.bitebullet-theme-dark .bite-bullet.reload-result {
+    color: #e6e6e6 !important;
+  }
+
+  /* Dark theme chat headers */
+  :root.bitebullet-theme-dark .bite-bullet.tap-result h3,
+  :root.bitebullet-theme-dark .bite-bullet.rank-advancement h3,
+  :root.bitebullet-theme-dark .bite-bullet.save-roll h3,
+  :root.bitebullet-theme-dark .bite-bullet.damage-roll h3,
+  :root.bitebullet-theme-dark .bite-bullet.reload-result h3 {
+    color: #ffb257 !important;
+  }
+
+  /* Ensure ALL text within bite-bullet chat messages is light in dark theme */
+  :root.bitebullet-theme-dark .bite-bullet,
+  :root.bitebullet-theme-dark .bite-bullet *,
+  :root.bitebullet-theme-dark .bite-bullet div,
+  :root.bitebullet-theme-dark .bite-bullet p,
+  :root.bitebullet-theme-dark .bite-bullet span,
+  :root.bitebullet-theme-dark .bite-bullet em {
+    color: #e6e6e6 !important;
+  }
+
+  /* Headers, damage values, and strong text get orange accent */
+  :root.bitebullet-theme-dark .bite-bullet h3,
+  :root.bitebullet-theme-dark .bite-bullet .damage,
+  :root.bitebullet-theme-dark .bite-bullet strong {
+    color: #ffb257 !important;
+  }
+
+  /* Success/failure states in dark theme */
+  :root.bitebullet-theme-dark .bite-bullet .success,
+  :root.bitebullet-theme-dark .bite-bullet .roll-result.success {
+    color: #90ee90 !important;
+  }
+
+  :root.bitebullet-theme-dark .bite-bullet .failure,
+  :root.bitebullet-theme-dark .bite-bullet .roll-result.failure {
+    color: #ff6b6b !important;
+  }
+
+  /* Advancement ready message */
+  :root.bitebullet-theme-dark .bite-bullet .advancement-ready {
+    color: #90ee90 !important;
+  }
+
+  /* Burden notes */
+  :root.bitebullet-theme-dark .bite-bullet .burden-note {
+    color: #ffb257 !important;
+  }
+
+  /* Dark theme reload button */
+  :root.bitebullet-theme-dark .bite-bullet .weapon-reload {
+    background: #ffb257 !important;
+    color: #1a1a1a !important;
+  }
+
+  :root.bitebullet-theme-dark .bite-bullet .weapon-reload:hover:not(:disabled) {
+    background: #ffd08a !important;
+  }
+
+  :root.bitebullet-theme-dark .bite-bullet .weapon-reload:disabled {
+    background: #444 !important;
+    color: #888 !important;
+  }
+
+  /* Reload result chat message styling */
+  .bite-bullet.reload-result {
+    background: rgba(139, 69, 19, 0.1);
+    border: 1px solid #8b4513;
+    border-radius: 4px;
+    padding: 8px;
+    color: #2c2c2c;
+  }
+
+  .bite-bullet.reload-result h3 {
+    color: #8b4513;
+    margin-top: 0;
+    margin-bottom: 6px;
+  }
+
+  /* Dark theme reload result */
+  :root.bitebullet-theme-dark .bite-bullet.reload-result {
+    background: rgba(255, 178, 87, 0.1);
+    border-color: #ffb257;
+    color: #e6e6e6;
+  }
+
+  :root.bitebullet-theme-dark .bite-bullet.reload-result h3 {
+    color: #ffb257;
+  }
   
   /* ===== SHEET HEADERS ===== */
   .bite-bullet .sheet-header {
@@ -903,8 +1080,10 @@
     grid-row: 2;
     grid-column: 2 / 4;
     display: flex;
-    gap: 20px;
-    font-size: 12px;
+    gap: 15px;
+    font-size: 11px;
+    flex-wrap: wrap;
+    overflow: hidden;
   }
 
   .bite-bullet .weapon-detail {
@@ -924,6 +1103,41 @@
     font-size: 12px;
     color: #2c1810;
     font-weight: normal;
+  }
+
+  /* Weapon actions (reload button) */
+  .bite-bullet .item.weapon .weapon-actions {
+    grid-row: 3;
+    grid-column: 2 / 4;
+    margin-top: 8px;
+  }
+
+  .bite-bullet .weapon-reload {
+    background: #8b4513;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 11px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .bite-bullet .weapon-reload:hover:not(:disabled) {
+    background: #a0522d;
+  }
+
+  .bite-bullet .weapon-reload:disabled {
+    background: #666;
+    color: #999;
+    cursor: not-allowed;
+  }
+
+  /* Update weapon grid to accommodate reload button */
+  .bite-bullet .item.weapon {
+    grid-template-rows: auto auto auto; /* Add third row for actions */
   }
   
   .bite-bullet .weapon-detail {

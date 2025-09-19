@@ -141,6 +141,7 @@
         "range": "close",
         "traits": "",
         "shots": 6,
+        "currentShots": 6,
         "properties": {
           "aoe": false,
           "melee": false,

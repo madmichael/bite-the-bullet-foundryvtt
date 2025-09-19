@@ -114,6 +114,9 @@ export class BiteBulletActorSheet extends foundry.appv1.sheets.ActorSheet {
       context.armor = armor;
       context.gear = gear;
       context.burdens = burdens;
+      
+      // Add Lead data for reload button access
+      context.lead = context.system.gear.lead;
     }
   
     /* -------------------------------------------- */
@@ -167,6 +170,9 @@ export class BiteBulletActorSheet extends foundry.appv1.sheets.ActorSheet {
   
       // Characteristic usage
       html.find('.characteristic-tap').click(this._onCharacteristicTap.bind(this));
+
+      // Weapon reload
+      html.find('.weapon-reload').click(this._onWeaponReload.bind(this));
       
       // Characteristic rank advancement
       html.find('.characteristic-advance').click(this._onCharacteristicAdvance.bind(this));
@@ -215,6 +221,77 @@ export class BiteBulletActorSheet extends foundry.appv1.sheets.ActorSheet {
       return await Item.create(itemData, {parent: this.actor});
     }
   
+    /**
+     * Handle weapon reload
+     * @param {Event} event   The originating click event
+     * @private
+     */
+    async _onWeaponReload(event) {
+      event.preventDefault();
+      const button = event.currentTarget;
+      const itemId = button.dataset.itemId;
+      const weapon = this.actor.items.get(itemId);
+      
+      if (!weapon) {
+        ui.notifications.error('Weapon not found');
+        return;
+      }
+
+      const currentLead = this.actor.system.gear.lead.value;
+      if (currentLead <= 0) {
+        ui.notifications.warn('No Lead available for reloading');
+        return;
+      }
+
+      const maxShots = weapon.system.shots;
+      const currentShots = weapon.system.currentShots;
+      
+      if (currentShots >= maxShots) {
+        ui.notifications.info(`${weapon.name} is already fully loaded`);
+        return;
+      }
+
+      // Consume 1 Lead
+      const newLeadValue = currentLead - 1;
+      await this.actor.update({
+        'system.gear.lead.value': newLeadValue
+      });
+
+      // Reload weapon to full capacity
+      await weapon.update({
+        'system.currentShots': maxShots
+      });
+
+      // Update inventory load if Lead is used up
+      if (newLeadValue === 0) {
+        const currentLoad = this.actor.system.resources.load.value;
+        const newLoad = Math.max(0, currentLoad - 1); // Remove 1 slot for used up Lead
+        const newReserve = this.actor.system.resources.inventory.value - newLoad;
+        
+        await this.actor.update({
+          'system.resources.load.value': newLoad,
+          'system.resources.reserve.value': newReserve
+        });
+      }
+
+      // Chat message
+      const messageData = {
+        speaker: ChatMessage.getSpeaker({actor: this.actor}),
+        content: `
+          <div class="bite-bullet reload-result">
+            <h3>${this.actor.name} - Weapon Reload</h3>
+            <p><strong>${weapon.name}</strong> reloaded to ${maxShots} shots</p>
+            <p>Lead remaining: ${newLeadValue}</p>
+            ${newLeadValue === 0 ? '<p><em>Lead supply exhausted - inventory slot freed</em></p>' : ''}
+          </div>
+        `,
+        sound: CONFIG.sounds.notification
+      };
+
+      ChatMessage.create(messageData);
+      ui.notifications.info(`${weapon.name} reloaded!`);
+    }
+
     /**
      * Handle clickable rolls.
      * @param {Event} event   The originating click event
@@ -487,7 +564,7 @@ export class BiteBulletActorSheet extends foundry.appv1.sheets.ActorSheet {
               }
               
               if (game?.bitebullet?.rollPhysicalDamage) {
-                await game.bitebullet.rollPhysicalDamage({ attacker: this.actor, baseFormula: base, target: tgt, targets: tgtActors, advantage: adv, disadvantage: dis, isGun, aoe, tapBonus, tappedChar: tapChar });
+                await game.bitebullet.rollPhysicalDamage({ attacker: this.actor, baseFormula: base, target: tgt, targets: tgtActors, advantage: adv, disadvantage: dis, isGun, aoe, tapBonus, tappedChar: tapChar, weapon: chosen });
               }
             }
           },
