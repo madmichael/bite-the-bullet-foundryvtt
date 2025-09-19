@@ -1,3 +1,7 @@
+## v1.0.5 - 2025-09-19
+
+- Initial release
+
 ## v1.0.4 - 2025-09-19
 
 - Initial release
